@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">KinderConnect</string>
+    <string name="slogan">Conectando educación y familia</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Inicio</string>
+    <string name="nav_students">Alumnos</string>
+    <string name="nav_grades">Calificaciones</string>
+    <string name="nav_notices">Avisos</string>
+    <string name="nav_gallery">Galería</string>
+    <string name="nav_profile">Perfil</string>
+    <string name="nav_attendance">Asistencia</string>
+
+    <!-- Authentication -->
+    <string name="login">Iniciar sesión</string>
+    <string name="register">Registrarse</string>
+    <string name="email">Correo electrónico</string>
+    <string name="password">Contraseña</string>
+    <string name="confirm_password">Confirmar contraseña</string>
+    <string name="forgot_password">¿Olvidaste tu contraseña?</string>
+    <string name="no_account">¿No tienes cuenta?</string>
+    <string name="already_have_account">¿Ya tienes cuenta?</string>
+    <string name="create_account">Crear cuenta</string>
+    <string name="full_name">Nombre completo</string>
+    <string name="phone">Teléfono</string>
+    <string name="logout">Cerrar sesión</string>
+
+    <!-- User Types -->
+    <string name="teacher">Maestra</string>
+    <string name="parent">Padre/Madre</string>
+    <string name="select_user_type">Selecciona tipo de usuario</string>
+
+    <!-- Students -->
+    <string name="add_student">Agregar alumno</string>
+    <string name="student_name">Nombre del alumno</string>
+    <string name="birth_date">Fecha de nacimiento</string>
+    <string name="group_name">Grupo</string>
+    <string name="emergency_contact">Contacto de emergencia</string>
+    <string name="allergies">Alergias</string>
+    <string name="medical_notes">Notas médicas</string>
+    <string name="my_child">Mi hijo/a</string>
+
+    <!-- Attendance -->
+    <string name="present">Presente</string>
+    <string name="late">Retardo</string>
+    <string name="absent">Falta</string>
+    <string name="save_and_notify">Guardar y notificar</string>
+    <string name="attendance_percentage">Asistencia del mes</string>
+
+    <!-- Grades -->
+    <string name="period">Periodo</string>
+    <string name="save_evaluation">Guardar evaluación</string>
+    <string name="requires_support">Requiere apoyo</string>
+    <string name="in_development">En desarrollo</string>
+    <string name="expected">Esperado</string>
+    <string name="outstanding">Sobresaliente</string>
+    <string name="observations">Observaciones</string>
+
+    <!-- Development Areas -->
+    <string name="area_language">Lenguaje y Comunicación</string>
+    <string name="area_math">Pensamiento Matemático</string>
+    <string name="area_nature">Exploración del Mundo Natural</string>
+    <string name="area_social">Desarrollo Personal y Social</string>
+    <string name="area_art">Expresión Artística</string>
+    <string name="area_physical">Desarrollo Físico y Salud</string>
+
+    <!-- Notices -->
+    <string name="publish_notice">Publicar aviso</string>
+    <string name="notice_title">Título del aviso</string>
+    <string name="notice_description">Descripción</string>
+    <string name="notice_category">Categoría</string>
+    <string name="scope">Ámbito</string>
+    <string name="attach_image">Adjuntar imagen</string>
+    <string name="publish">Publicar</string>
+    <string name="unread_notices">Avisos sin leer</string>
+
+    <!-- Gallery -->
+    <string name="add_photo">Agregar foto</string>
+
+    <!-- General -->
+    <string name="save">Guardar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="delete">Eliminar</string>
+    <string name="edit">Editar</string>
+    <string name="ok">Aceptar</string>
+    <string name="hello_teacher">Hola, %1$s</string>
+    <string name="total_students">Total de alumnos</string>
+    <string name="today_attendance">Asistencia hoy</string>
+</resources>

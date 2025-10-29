@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/parent_nav_graph"
+    app:startDestination="@id/parentHomeFragment">
+
+    <fragment
+        android:id="@+id/parentHomeFragment"
+        android:name="com.example.kinderconnect.ui.parent.ParentHomeFragment"
+        android:label="Inicio"
+        tools:layout="@layout/fragment_parent_home" />
+
+    <fragment
+        android:id="@+id/gradeViewFragment"
+        android:name="com.example.kinderconnect.ui.parent.GradeViewFragment"
+        android:label="Calificaciones"
+        tools:layout="@layout/fragment_grade_view" />
+
+    <fragment
+        android:id="@+id/noticeListFragment"
+        android:name="com.example.kinderconnect.ui.parent.NoticeListFragment"
+        android:label="Avisos"
+        tools:layout="@layout/fragment_notice_list" >
+
+        <action
+            android:id="@+id/action_notices_to_detail"
+            app:destination="@id/noticeDetailFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/noticeDetailFragment"
+        android:name="com.example.kinderconnect.ui.parent.NoticeDetailFragment"
+        android:label="Detalle del Aviso"
+        tools:layout="@layout/fragment_notice_detail" >
+
+        <argument
+            android:name="noticeId"
+            app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/parentGalleryFragment"
+        android:name="com.example.kinderconnect.ui.parent.GalleryFragment"
+        android:label="Galería"
+        tools:layout="@layout/fragment_gallery" />
+
+    <fragment
+        android:id="@+id/parentProfileFragment"
+        android:name="com.example.kinderconnect.ui.common.ProfileFragment"
+        android:label="Perfil"
+        tools:layout="@layout/fragment_profile" />
+
+</navigation>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/parentHomeFragment"
+        android:icon="@drawable/ic_home"
+        android:title="@string/nav_home" />
+
+    <item
+        android:id="@+id/gradeViewFragment"
+        android:icon="@drawable/ic_grade"
+        android:title="@string/nav_grades" />
+
+    <item
+        android:id="@+id/noticeListFragment"
+        android:icon="@drawable/ic_notifications"
+        android:title="@string/nav_notices" />
+
+    <item
+        android:id="@+id/parentGalleryFragment"
+        android:icon="@drawable/ic_gallery"
+        android:title="@string/nav_gallery" />
+
+    <item
+        android:id="@+id/parentProfileFragment"
+        android:icon="@drawable/ic_person"
+        android:title="@string/nav_profile" />
+
+</menu>

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/teacher_nav_graph"
+    app:startDestination="@id/teacherHomeFragment">
+
+    <fragment
+        android:id="@+id/teacherHomeFragment"
+        android:name="com.example.kinderconnect.ui.teacher.TeacherHomeFragment"
+        android:label="Inicio"
+        tools:layout="@layout/fragment_teacher_home">
+        <action
+            android:id="@+id/action_home_to_attendance"
+            app:destination="@id/attendanceFragment" />
+        <action
+            android:id="@+id/action_home_to_grade_registration"
+            app:destination="@id/gradeRegistrationFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/studentListFragment"
+        android:name="com.example.kinderconnect.ui.teacher.StudentListFragment"
+        android:label="Alumnos"
+        tools:layout="@layout/fragment_student_list">
+        <action
+            android:id="@+id/action_students_to_add_student"
+            app:destination="@id/addStudentFragment" />
+        <action
+            android:id="@+id/action_students_to_grade_registration"
+            app:destination="@id/gradeRegistrationFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/addStudentFragment"
+        android:name="com.example.kinderconnect.ui.teacher.AddStudentFragment"
+        android:label="Agregar Alumno"
+        tools:layout="@layout/fragment_add_student" />
+
+    <fragment
+        android:id="@+id/attendanceFragment"
+        android:name="com.example.kinderconnect.ui.teacher.AttendanceFragment"
+        android:label="Asistencia"
+        tools:layout="@layout/fragment_attendance" />
+
+    <fragment
+        android:id="@+id/gradeRegistrationFragment"
+        android:name="com.example.kinderconnect.ui.teacher.GradeRegistrationFragment"
+        android:label="Registrar Calificaciones"
+        tools:layout="@layout/fragment_grade_registration">
+        <argument
+            android:name="studentId"
+            app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/teacherNoticesFragment"
+        android:name="com.example.kinderconnect.ui.teacher.TeacherNoticesFragment"
+        android:label="Avisos"
+        tools:layout="@layout/fragment_teacher_notices">
+        <action
+            android:id="@+id/action_notices_to_publish"
+            app:destination="@id/publishNoticeFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/publishNoticeFragment"
+        android:name="com.example.kinderconnect.ui.teacher.PublishNoticeFragment"
+        android:label="Publicar Aviso"
+        tools:layout="@layout/fragment_publish_notice" />
+
+    <fragment
+        android:id="@+id/teacherGalleryFragment"
+        android:name="com.example.kinderconnect.ui.teacher.TeacherGalleryFragment"
+        android:label="Galería"
+        tools:layout="@layout/fragment_teacher_gallery" />
+
+    <fragment
+        android:id="@+id/teacherProfileFragment"
+        android:name="com.example.kinderconnect.ui.common.ProfileFragment"
+        android:label="Perfil"
+        tools:layout="@layout/fragment_profile" />
+
+</navigation>

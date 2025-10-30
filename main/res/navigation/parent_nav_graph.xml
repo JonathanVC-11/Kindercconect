@@ -22,7 +22,6 @@
         android:name="com.example.kinderconnect.ui.parent.NoticeListFragment"
         android:label="Avisos"
         tools:layout="@layout/fragment_notice_list" >
-
         <action
             android:id="@+id/action_notices_to_detail"
             app:destination="@id/noticeDetailFragment" />
@@ -33,7 +32,6 @@
         android:name="com.example.kinderconnect.ui.parent.NoticeDetailFragment"
         android:label="Detalle del Aviso"
         tools:layout="@layout/fragment_notice_detail" >
-
         <argument
             android:name="noticeId"
             app:argType="string" />
@@ -44,6 +42,12 @@
         android:name="com.example.kinderconnect.ui.parent.GalleryFragment"
         android:label="Galería"
         tools:layout="@layout/fragment_gallery" />
+
+    <fragment
+        android:id="@+id/busRouteFragment"
+        android:name="com.example.kinderconnect.ui.parent.BusRouteFragment"
+        android:label="Ruta del Autobús"
+        tools:layout="@layout/fragment_bus_route" />
 
     <fragment
         android:id="@+id/parentProfileFragment"

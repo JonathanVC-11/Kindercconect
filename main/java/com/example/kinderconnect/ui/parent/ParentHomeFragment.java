@@ -1,6 +1,7 @@
 package com.example.kinderconnect.ui.parent;
 
 import android.os.Bundle;
+import android.util.Log; // <-- AÑADIDO
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,12 +16,14 @@ import com.example.kinderconnect.databinding.FragmentParentHomeBinding;
 import com.example.kinderconnect.data.local.PreferencesManager;
 import com.example.kinderconnect.data.model.Student;
 import com.example.kinderconnect.utils.DateUtils;
+import com.google.firebase.messaging.FirebaseMessaging; // <-- AÑADIDO
 
 public class ParentHomeFragment extends Fragment {
     private FragmentParentHomeBinding binding;
     private ParentViewModel viewModel;
     private PreferencesManager preferencesManager;
     private Student currentStudent;
+    private static final String TAG = "ParentHomeFragment"; // <-- AÑADIDO
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
@@ -67,10 +70,37 @@ public class ParentHomeFragment extends Fragment {
                     displayStudentInfo();
                     loadAttendanceStats();
                     loadNoticesCount();
+                    // --- AÑADIR LLAMADA A SUSCRIPCIÓN ---
+                    subscribeToTopics(currentStudent.getGroupName());
                 }
             }
         });
     }
+
+    // --- NUEVO MÉTODO AÑADIDO ---
+    private void subscribeToTopics(String groupName) {
+        // 1. Suscribirse al tema general de la escuela
+        FirebaseMessaging.getInstance().subscribeToTopic("notices_SCHOOL")
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "Suscrito al tema: notices_SCHOOL"))
+                .addOnFailureListener(e -> Log.e(TAG, "Error al suscribir a notices_SCHOOL", e));
+
+        // 2. Suscribirse al tema específico del grupo
+        if (groupName != null && !groupName.isEmpty()) {
+            // Limpiar el nombre del grupo para que sea un tema de FCM válido
+            String cleanGroupName = groupName.replaceAll("[^a-zA-Z0-9]", "_");
+            String groupTopic = "notices_GROUP_" + cleanGroupName; // Ej: "notices_GROUP_Grupo_A"
+
+            FirebaseMessaging.getInstance().subscribeToTopic(groupTopic)
+                    .addOnSuccessListener(aVoid -> Log.d(TAG, "Suscrito al tema: " + groupTopic))
+                    .addOnFailureListener(e -> Log.e(TAG, "Error al suscribir a " + groupTopic, e));
+        }
+
+        // 3. Suscripción al tema del autobús (esto ya lo tenías, pero lo confirmamos aquí)
+        FirebaseMessaging.getInstance().subscribeToTopic("bus_route")
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "Suscrito al tema: bus_route"))
+                .addOnFailureListener(e -> Log.e(TAG, "Error al suscribir a bus_route", e));
+    }
+    // --- FIN DE NUEVO MÉTODO ---
 
     private void displayStudentInfo() {
         binding.tvStudentName.setText(currentStudent.getFullName());

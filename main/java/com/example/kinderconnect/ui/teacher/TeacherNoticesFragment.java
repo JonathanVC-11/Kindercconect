@@ -15,12 +15,16 @@ import com.example.kinderconnect.R;
 import com.example.kinderconnect.databinding.FragmentTeacherNoticesBinding;
 import com.example.kinderconnect.data.local.PreferencesManager;
 import com.example.kinderconnect.ui.parent.adapters.NoticeAdapter;
+import com.example.kinderconnect.utils.Resource; // <-- AÑADIDO
 
 public class TeacherNoticesFragment extends Fragment {
     private FragmentTeacherNoticesBinding binding;
     private TeacherViewModel viewModel;
     private PreferencesManager preferencesManager;
     private NoticeAdapter adapter;
+
+    // --- AÑADIR VARIABLE ---
+    private String teacherGroupName = null;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
@@ -38,7 +42,9 @@ public class TeacherNoticesFragment extends Fragment {
 
         setupRecyclerView();
         setupListeners();
-        loadNotices();
+
+        // --- MODIFICADO ---
+        loadTeacherGroup();
     }
 
     private void setupRecyclerView() {
@@ -58,10 +64,42 @@ public class TeacherNoticesFragment extends Fragment {
                         R.id.action_notices_to_publish));
     }
 
-    private void loadNotices() {
+    // --- NUEVO MÉTODO AÑADIDO ---
+    private void loadTeacherGroup() {
+        String teacherId = preferencesManager.getUserId();
+        if (teacherId == null) return;
+
         binding.progressBar.setVisibility(View.VISIBLE);
 
-        viewModel.getNoticesByGroup("Grupo A").observe(getViewLifecycleOwner(), resource -> {
+        viewModel.getStudentsByTeacher(teacherId).observe(getViewLifecycleOwner(), resource -> {
+            if (resource.getStatus() == Resource.Status.SUCCESS && resource.getData() != null && !resource.getData().isEmpty()) {
+                teacherGroupName = resource.getData().get(0).getGroupName();
+                loadNotices(); // Cargar avisos AHORA que sabemos el grupo
+            } else if (resource.getStatus() == Resource.Status.SUCCESS) {
+                // Maestra sin alumnos, no puede cargar avisos de grupo
+                binding.progressBar.setVisibility(View.GONE);
+                binding.tvEmpty.setText("No tienes alumnos asignados");
+                binding.tvEmpty.setVisibility(View.VISIBLE);
+            } else if (resource.getStatus() == Resource.Status.ERROR) {
+                binding.progressBar.setVisibility(View.GONE);
+                Toast.makeText(requireContext(), "Error al cargar datos del grupo", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void loadNotices() {
+        // --- VALIDACIÓN AÑADIDA ---
+        if (teacherGroupName == null) {
+            binding.progressBar.setVisibility(View.GONE);
+            binding.tvEmpty.setVisibility(View.VISIBLE);
+            return;
+        }
+
+        binding.progressBar.setVisibility(View.VISIBLE);
+
+        // --- CORRECCIÓN DE "Grupo A" ---
+        // viewModel.getNoticesByGroup("Grupo A").observe(getViewLifecycleOwner(), resource -> { // <-- ERROR
+        viewModel.getNoticesByGroup(teacherGroupName).observe(getViewLifecycleOwner(), resource -> { // <-- CORREGIDO
             if (resource != null) {
                 switch (resource.getStatus()) {
                     case LOADING:

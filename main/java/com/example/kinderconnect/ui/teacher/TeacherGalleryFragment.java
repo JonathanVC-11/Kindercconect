@@ -22,6 +22,7 @@ import com.example.kinderconnect.data.model.GalleryItem;
 import com.example.kinderconnect.ui.adapters.GalleryAdapter;
 import com.example.kinderconnect.utils.Constants;
 import com.example.kinderconnect.utils.PermissionManager;
+import com.example.kinderconnect.utils.Resource; // <-- AÑADIDO
 
 public class TeacherGalleryFragment extends Fragment {
     private FragmentTeacherGalleryBinding binding;
@@ -33,6 +34,9 @@ public class TeacherGalleryFragment extends Fragment {
     private Uri selectedMediaUri;
     private Uri capturedPhotoUri;
     private String selectedMediaType;
+
+    // --- AÑADIR VARIABLE ---
+    private String teacherGroupName = null;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -76,7 +80,10 @@ public class TeacherGalleryFragment extends Fragment {
 
         setupRecyclerView();
         setupListeners();
-        loadGallery();
+
+        // --- MODIFICAR CARGA DE DATOS ---
+        binding.fabAddMedia.setEnabled(false); // Deshabilitar FAB hasta cargar grupo
+        loadTeacherGroup();
     }
 
     private void setupRecyclerView() {
@@ -97,6 +104,32 @@ public class TeacherGalleryFragment extends Fragment {
 
     private void setupListeners() {
         binding.fabAddMedia.setOnClickListener(v -> showMediaOptions());
+    }
+
+    // --- NUEVO MÉTODO AÑADIDO ---
+    private void loadTeacherGroup() {
+        String teacherId = preferencesManager.getUserId();
+        if (teacherId == null) return;
+
+        binding.progressBar.setVisibility(View.VISIBLE);
+
+        viewModel.getStudentsByTeacher(teacherId).observe(getViewLifecycleOwner(), resource -> {
+            if (resource.getStatus() == Resource.Status.SUCCESS && resource.getData() != null && !resource.getData().isEmpty()) {
+                // Asumimos que la maestra solo tiene un grupo.
+                teacherGroupName = resource.getData().get(0).getGroupName();
+                loadGallery(); // Cargar galería AHORA que sabemos el grupo
+                binding.fabAddMedia.setEnabled(true); // Habilitar FAB
+            } else if (resource.getStatus() == Resource.Status.SUCCESS) {
+                // Maestra sin alumnos
+                binding.progressBar.setVisibility(View.GONE);
+                binding.tvEmpty.setText("No tienes alumnos asignados");
+                binding.tvEmpty.setVisibility(View.VISIBLE);
+                binding.fabAddMedia.setEnabled(false); // No puede subir fotos si no tiene grupo
+            } else if (resource.getStatus() == Resource.Status.ERROR) {
+                binding.progressBar.setVisibility(View.GONE);
+                Toast.makeText(requireContext(), "Error al cargar datos del grupo", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void showMediaOptions() {
@@ -158,6 +191,12 @@ public class TeacherGalleryFragment extends Fragment {
     private void uploadMedia() {
         if (selectedMediaUri == null) return;
 
+        // --- AÑADIR VALIDACIÓN ---
+        if (teacherGroupName == null) {
+            Toast.makeText(requireContext(), "No se pudo determinar tu grupo para subir la foto", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         String teacherId = preferencesManager.getUserId();
         GalleryItem galleryItem = new GalleryItem(
                 teacherId,
@@ -165,7 +204,10 @@ public class TeacherGalleryFragment extends Fragment {
                 selectedMediaType,
                 "Actividad escolar"
         );
-        galleryItem.setGroupName("Grupo A");
+
+        // --- CORRECCIÓN DE "Grupo A" ---
+        // galleryItem.setGroupName("Grupo A"); // <-- ESTE ES EL ERROR
+        galleryItem.setGroupName(teacherGroupName); // <-- CORREGIDO
 
         binding.progressBar.setVisibility(View.VISIBLE);
         binding.fabAddMedia.setEnabled(false);
@@ -174,13 +216,16 @@ public class TeacherGalleryFragment extends Fragment {
                 .observe(getViewLifecycleOwner(), resource -> {
                     if (resource != null) {
                         switch (resource.getStatus()) {
+                            case LOADING:
+                                // Ya está mostrando el progress
+                                break;
                             case SUCCESS:
                                 binding.progressBar.setVisibility(View.GONE);
                                 binding.fabAddMedia.setEnabled(true);
                                 Toast.makeText(requireContext(),
                                         "Contenido subido correctamente",
                                         Toast.LENGTH_SHORT).show();
-                                loadGallery();
+                                // loadGallery(); // No es necesario, el listener lo actualiza
                                 break;
 
                             case ERROR:
@@ -195,9 +240,18 @@ public class TeacherGalleryFragment extends Fragment {
     }
 
     private void loadGallery() {
+        // --- AÑADIR VALIDACIÓN ---
+        if (teacherGroupName == null) {
+            binding.progressBar.setVisibility(View.GONE);
+            binding.tvEmpty.setVisibility(View.VISIBLE);
+            return; // No cargar galería si no hay grupo
+        }
+
         binding.progressBar.setVisibility(View.VISIBLE);
 
-        viewModel.getGalleryByGroup("Grupo A").observe(getViewLifecycleOwner(), resource -> {
+        // --- CORRECCIÓN DE "Grupo A" ---
+        // viewModel.getGalleryByGroup("Grupo A").observe(getViewLifecycleOwner(), resource -> { // <-- ERROR
+        viewModel.getGalleryByGroup(teacherGroupName).observe(getViewLifecycleOwner(), resource -> { // <-- CORREGIDO
             if (resource != null) {
                 switch (resource.getStatus()) {
                     case LOADING:
@@ -244,7 +298,7 @@ public class TeacherGalleryFragment extends Fragment {
                         Toast.makeText(requireContext(),
                                 "Elemento eliminado",
                                 Toast.LENGTH_SHORT).show();
-                        loadGallery();
+                        // loadGallery(); // No es necesario, el listener lo actualiza
                     }
                 });
     }

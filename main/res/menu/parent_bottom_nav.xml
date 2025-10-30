@@ -17,9 +17,9 @@
         android:title="@string/nav_notices" />
 
     <item
-        android:id="@+id/parentGalleryFragment"
-        android:icon="@drawable/ic_gallery"
-        android:title="@string/nav_gallery" />
+        android:id="@+id/busRouteFragment"
+        android:icon="@drawable/ic_bus"
+        android:title="Autobús" />
 
     <item
         android:id="@+id/parentProfileFragment"

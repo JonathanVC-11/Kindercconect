@@ -20,6 +20,7 @@ import com.example.kinderconnect.databinding.FragmentPublishNoticeBinding;
 import com.example.kinderconnect.data.local.PreferencesManager;
 import com.example.kinderconnect.data.model.Notice;
 import com.example.kinderconnect.utils.Constants;
+import com.example.kinderconnect.utils.Resource; // <-- AÑADIDO
 import java.util.Calendar;
 import java.util.Date;
 
@@ -29,6 +30,9 @@ public class PublishNoticeFragment extends Fragment {
     private PreferencesManager preferencesManager;
     private Uri selectedImageUri;
     private ActivityResultLauncher<Intent> imagePickerLauncher;
+
+    // --- AÑADIR VARIABLE ---
+    private String teacherGroupName = null;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -64,6 +68,11 @@ public class PublishNoticeFragment extends Fragment {
         setupToolbar();
         setupSpinners();
         setupListeners();
+
+        // --- MODIFICADO ---
+        // Deshabilitar el botón hasta que sepamos el grupo
+        binding.btnPublish.setEnabled(false);
+        loadTeacherGroup();
     }
 
     private void setupToolbar() {
@@ -98,6 +107,31 @@ public class PublishNoticeFragment extends Fragment {
         binding.btnPublish.setOnClickListener(v -> publishNotice());
     }
 
+    // --- NUEVO MÉTODO AÑADIDO ---
+    private void loadTeacherGroup() {
+        String teacherId = preferencesManager.getUserId();
+        if (teacherId == null) {
+            Toast.makeText(requireContext(), "Error de sesión", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        viewModel.getStudentsByTeacher(teacherId).observe(getViewLifecycleOwner(), resource -> {
+            if (resource.getStatus() == Resource.Status.SUCCESS && resource.getData() != null && !resource.getData().isEmpty()) {
+                // Asumimos que la maestra solo tiene un grupo.
+                // Obtenemos el nombre del grupo del primer estudiante.
+                teacherGroupName = resource.getData().get(0).getGroupName();
+                binding.btnPublish.setEnabled(true); // Habilitar botón
+            } else if (resource.getStatus() == Resource.Status.SUCCESS) {
+                // La maestra no tiene alumnos, pero aún puede publicar en "Toda la escuela"
+                teacherGroupName = null;
+                binding.btnPublish.setEnabled(true); // Habilitar botón
+            } else if (resource.getStatus() == Resource.Status.ERROR) {
+                Toast.makeText(requireContext(), "Error al cargar datos del grupo", Toast.LENGTH_SHORT).show();
+                binding.btnPublish.setEnabled(true); // Habilitar de todos modos
+            }
+        });
+    }
+
     private void selectImage() {
         Intent intent = new Intent(Intent.ACTION_PICK,
                 MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
@@ -130,10 +164,18 @@ public class PublishNoticeFragment extends Fragment {
         Notice notice = new Notice(teacherId, title, description, category, scope);
         notice.setTeacherName(teacherName);
 
+
+        // --- CORRECCIÓN DE LÓGICA DE GRUPO ---
         if (scope.equals(Constants.SCOPE_GROUP)) {
-            // Aquí deberías obtener el grupo del profesor
-            notice.setGroupName("Grupo A");
+            // Validar que la maestra tenga un grupo
+            if (teacherGroupName == null || teacherGroupName.isEmpty()) {
+                Toast.makeText(requireContext(), "No tienes un grupo asignado para publicar", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            // Asignar el grupo real de la maestra
+            notice.setGroupName(teacherGroupName); // <-- CORREGIDO
         }
+        // Si el scope es "SCHOOL", no establecemos groupName (se queda null).
 
         // Fecha de vigencia (7 días por defecto)
         Calendar calendar = Calendar.getInstance();

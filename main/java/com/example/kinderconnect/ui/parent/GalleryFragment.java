@@ -19,7 +19,10 @@ public class GalleryFragment extends Fragment {
     private ParentViewModel viewModel;
     private PreferencesManager preferencesManager;
     private GalleryAdapter adapter;
-    private String studentId;
+
+    // --- CAMBIAR NOMBRE DE VARIABLE ---
+    // private String studentId; // <-- Obsoleto
+    private String studentGroupName; // <-- Usaremos esta
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
@@ -51,8 +54,10 @@ public class GalleryFragment extends Fragment {
         });
     }
 
+    // --- MÉTODO MODIFICADO ---
     private void loadStudentAndGallery() {
         String parentId = preferencesManager.getUserId();
+        if (parentId == null) return;
 
         binding.progressBar.setVisibility(View.VISIBLE);
 
@@ -61,15 +66,28 @@ public class GalleryFragment extends Fragment {
                     com.example.kinderconnect.utils.Resource.Status.SUCCESS) {
 
                 if (resource.getData() != null && !resource.getData().isEmpty()) {
-                    studentId = resource.getData().get(0).getStudentId();
-                    loadGallery();
+                    // Obtenemos el nombre del grupo del primer alumno
+                    studentGroupName = resource.getData().get(0).getGroupName(); // <-- Guardamos el grupo
+                    loadGallery(); // <-- Llamamos a cargar galería
+                } else {
+                    // El padre no tiene hijos asignados
+                    binding.progressBar.setVisibility(View.GONE);
+                    binding.tvEmpty.setText("No hay alumnos asignados");
+                    binding.tvEmpty.setVisibility(View.VISIBLE);
                 }
+            } else if (resource != null && resource.getStatus() == com.example.kinderconnect.utils.Resource.Status.ERROR) {
+                binding.progressBar.setVisibility(View.GONE);
+                Toast.makeText(requireContext(), resource.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
 
+    // --- MÉTODO MODIFICADO ---
     private void loadGallery() {
-        viewModel.getGalleryByStudent(studentId).observe(getViewLifecycleOwner(), resource -> {
+        if (studentGroupName == null) return; // No buscar si no hay grupo
+
+        // viewModel.getGalleryByStudent(studentId).observe(getViewLifecycleOwner(), resource -> { // <-- LÓGICA ANTERIOR INCORRECTA
+        viewModel.getGalleryByGroup(studentGroupName).observe(getViewLifecycleOwner(), resource -> { // <-- LÓGICA CORREGIDA
             if (resource != null) {
                 switch (resource.getStatus()) {
                     case LOADING:

@@ -8,8 +8,10 @@ import com.google.firebase.firestore.FirebaseFirestore;
 
 public class BusRepository {
     private final FirebaseFirestore firestore;
-    private static final String COLLECTION_BUS = "bus";
-    private static final String DOCUMENT_ROUTE = "route";
+
+    // --- ¡¡LÍNEAS CORREGIDAS AQUÍ!! ---
+    private static final String COLLECTION_BUS = "bus_tracking"; // Antes era "bus"
+    private static final String DOCUMENT_ROUTE = "current_status"; // Antes era "route"
 
     public BusRepository() {
         this.firestore = FirebaseFirestore.getInstance();
@@ -31,6 +33,7 @@ public class BusRepository {
                         BusStatus busStatus = snapshot.toObject(BusStatus.class);
                         result.setValue(Resource.success(busStatus));
                     } else {
+                        // Este es el error que veías. Ahora buscará en el lugar correcto.
                         result.setValue(Resource.error("No se encontró estado del bus", null));
                     }
                 });

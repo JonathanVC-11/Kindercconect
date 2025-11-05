@@ -70,18 +70,30 @@ public class GalleryAdapter extends ListAdapter<GalleryItem, GalleryAdapter.Gall
             });
         }
 
+        // --- ¡¡BLOQUE MODIFICADO AQUÍ!! ---
         void bind(GalleryItem item) {
             if (item.getMediaType().equals(Constants.MEDIA_VIDEO)) {
+                // Es un VIDEO
                 binding.ivPlayIcon.setVisibility(android.view.View.VISIBLE);
-            } else {
-                binding.ivPlayIcon.setVisibility(android.view.View.GONE);
-            }
 
-            Glide.with(binding.getRoot().getContext())
-                    .load(item.getThumbnailUrl())
-                    .placeholder(R.drawable.ic_logo)
-                    .centerCrop()
-                    .into(binding.ivThumbnail);
+                // Cargar un placeholder (logo) porque Glide no puede cargar un video .mp4
+                Glide.with(binding.getRoot().getContext())
+                        .load(R.drawable.ic_logo) // Carga el logo como thumbnail
+                        .placeholder(R.drawable.ic_logo)
+                        .centerCrop()
+                        .into(binding.ivThumbnail);
+
+            } else {
+                // Es una IMAGEN
+                binding.ivPlayIcon.setVisibility(android.view.View.GONE);
+
+                // Cargar la imagen normalmente
+                Glide.with(binding.getRoot().getContext())
+                        .load(item.getThumbnailUrl()) // Usa el thumbnail
+                        .placeholder(R.drawable.ic_logo)
+                        .centerCrop()
+                        .into(binding.ivThumbnail);
+            }
         }
     }
 

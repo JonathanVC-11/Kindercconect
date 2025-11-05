@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel;
 import com.example.kinderconnect.data.model.*;
 import com.example.kinderconnect.data.repository.*;
 import com.example.kinderconnect.utils.Resource;
+import com.google.firebase.firestore.GeoPoint; // ¡Importante!
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -32,7 +33,7 @@ public class TeacherViewModel extends ViewModel {
         this.busTrackingRepository = new BusTrackingRepository(); // ¡Inicializar!
     }
 
-    // --- MÉTODO CORREGIDO: Acepta parentEmail ---
+    // --- Student ---
     public LiveData<Resource<Student>> addStudent(Student student, String parentEmail, Uri imageUri) {
         return studentRepository.addStudent(student, parentEmail, imageUri);
     }
@@ -61,7 +62,6 @@ public class TeacherViewModel extends ViewModel {
             date = sdf.parse(dateStr);
         } catch (ParseException e) {
             e.printStackTrace();
-            // Retorna LiveData con error o un LiveData vacío si la fecha es inválida
             MutableLiveData<Resource<List<Attendance>>> errorResult = new MutableLiveData<>();
             errorResult.setValue(Resource.error("Formato de fecha inválido", null));
             return errorResult;
@@ -109,20 +109,26 @@ public class TeacherViewModel extends ViewModel {
         return galleryRepository.deleteGalleryItem(itemId);
     }
 
-    // --- MÉTODOS NUEVOS PARA EL AUTOBÚS ---
+    // --- Bus Tracking ---
     public LiveData<Resource<Void>> startBusRoute() {
-        // Llama al repositorio para cambiar el estado a ACTIVE
         return busTrackingRepository.updateBusStatus("ACTIVE");
     }
 
     public LiveData<Resource<Void>> finishBusRoute() {
-        // Llama al repositorio para cambiar el estado a FINISHED (o INACTIVE si prefieres)
+        // Podrías usar "FINISHED" o "STOPPED", dependiendo de tu lógica
         return busTrackingRepository.updateBusStatus("FINISHED");
     }
 
-    // Método para obtener el estado actual y mostrar los botones correctamente
     public LiveData<Resource<String>> getCurrentBusStatus() {
         return busTrackingRepository.getCurrentBusStatus();
     }
-    // --- FIN MÉTODOS NUEVOS ---
+
+    // --- ¡¡NUEVO MÉTODO AÑADIDO!! ---
+    /**
+     * Llama al repositorio para actualizar la ubicación del bus en Firestore.
+     * Este método no devuelve LiveData, ya que se llama desde un servicio.
+     */
+    public void updateBusLocation(GeoPoint location) {
+        busTrackingRepository.updateBusLocation(location);
+    }
 }

@@ -13,16 +13,14 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import com.example.kinderconnect.databinding.FragmentGalleryBinding;
 import com.example.kinderconnect.data.local.PreferencesManager;
 import com.example.kinderconnect.ui.adapters.GalleryAdapter;
+import com.example.kinderconnect.utils.Resource; // Asegúrate que esté importado
 
 public class GalleryFragment extends Fragment {
     private FragmentGalleryBinding binding;
     private ParentViewModel viewModel;
     private PreferencesManager preferencesManager;
     private GalleryAdapter adapter;
-
-    // --- CAMBIAR NOMBRE DE VARIABLE ---
-    // private String studentId; // <-- Obsoleto
-    private String studentGroupName; // <-- Usaremos esta
+    private String studentGroupName; // Usaremos esta
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
@@ -39,61 +37,91 @@ public class GalleryFragment extends Fragment {
         preferencesManager = new PreferencesManager(requireContext());
 
         setupRecyclerView();
-        loadStudentAndGallery();
+        loadStudentAndGallery(); // Este método ahora carga el grupo y luego la galería
     }
 
     private void setupRecyclerView() {
         adapter = new GalleryAdapter();
+        // Asegúrate de que el ID del RecyclerView en fragment_gallery.xml sea "recyclerView"
         binding.recyclerView.setLayoutManager(new GridLayoutManager(requireContext(), 3));
         binding.recyclerView.setAdapter(adapter);
 
         adapter.setOnItemClickListener(item -> {
-            // Abrir imagen/video en pantalla completa
-            Toast.makeText(requireContext(), "Ver: " + item.getDescription(),
+            // Acción al hacer clic (ej: abrir a pantalla completa)
+            // Por ahora, solo un Toast
+            Toast.makeText(requireContext(), "Ver: " + (item.getDescription() != null ? item.getDescription() : "Media"),
                     Toast.LENGTH_SHORT).show();
+            // Aquí podrías navegar a otro fragmento o actividad para ver la imagen/video
         });
     }
 
-    // --- MÉTODO MODIFICADO ---
+    // --- MÉTODO CORREGIDO ---
     private void loadStudentAndGallery() {
         String parentId = preferencesManager.getUserId();
-        if (parentId == null) return;
+        if (parentId == null) {
+            binding.progressBar.setVisibility(View.GONE);
+            binding.tvEmpty.setText("Error: No se pudo identificar al usuario.");
+            binding.tvEmpty.setVisibility(View.VISIBLE);
+            return;
+        }
 
         binding.progressBar.setVisibility(View.VISIBLE);
+        binding.recyclerView.setVisibility(View.GONE);
+        binding.tvEmpty.setVisibility(View.GONE);
 
         viewModel.getStudentsByParent(parentId).observe(getViewLifecycleOwner(), resource -> {
-            if (resource != null && resource.getStatus() ==
-                    com.example.kinderconnect.utils.Resource.Status.SUCCESS) {
+            if (!isAdded() || binding == null) return; // Verificar si el fragmento sigue vivo
 
+            if (resource != null && resource.getStatus() == Resource.Status.SUCCESS) {
                 if (resource.getData() != null && !resource.getData().isEmpty()) {
                     // Obtenemos el nombre del grupo del primer alumno
-                    studentGroupName = resource.getData().get(0).getGroupName(); // <-- Guardamos el grupo
-                    loadGallery(); // <-- Llamamos a cargar galería
+                    studentGroupName = resource.getData().get(0).getGroupName();
+                    if (studentGroupName != null && !studentGroupName.isEmpty()) {
+                        loadGallery(); // <-- Llamamos a cargar galería SOLO si tenemos grupo
+                    } else {
+                        binding.progressBar.setVisibility(View.GONE);
+                        binding.tvEmpty.setText("El alumno no tiene un grupo asignado.");
+                        binding.tvEmpty.setVisibility(View.VISIBLE);
+                    }
                 } else {
                     // El padre no tiene hijos asignados
                     binding.progressBar.setVisibility(View.GONE);
-                    binding.tvEmpty.setText("No hay alumnos asignados");
+                    binding.tvEmpty.setText("No hay alumnos asignados a esta cuenta.");
                     binding.tvEmpty.setVisibility(View.VISIBLE);
                 }
-            } else if (resource != null && resource.getStatus() == com.example.kinderconnect.utils.Resource.Status.ERROR) {
+            } else if (resource != null && resource.getStatus() == Resource.Status.ERROR) {
                 binding.progressBar.setVisibility(View.GONE);
-                Toast.makeText(requireContext(), resource.getMessage(), Toast.LENGTH_SHORT).show();
+                binding.tvEmpty.setText("Error al cargar datos del alumno: " + resource.getMessage());
+                binding.tvEmpty.setVisibility(View.VISIBLE);
+                //Toast.makeText(requireContext(), resource.getMessage(), Toast.LENGTH_SHORT).show(); // Opcional
             }
+            // No hacer nada en LOADING, ya está visible el progress bar
         });
     }
 
-    // --- MÉTODO MODIFICADO ---
+    // --- MÉTODO CORREGIDO ---
     private void loadGallery() {
-        if (studentGroupName == null) return; // No buscar si no hay grupo
+        if (studentGroupName == null) { // Doble chequeo por si acaso
+            binding.progressBar.setVisibility(View.GONE);
+            binding.tvEmpty.setText("No se pudo determinar el grupo del alumno.");
+            binding.tvEmpty.setVisibility(View.VISIBLE);
+            return;
+        }
 
-        // viewModel.getGalleryByStudent(studentId).observe(getViewLifecycleOwner(), resource -> { // <-- LÓGICA ANTERIOR INCORRECTA
-        viewModel.getGalleryByGroup(studentGroupName).observe(getViewLifecycleOwner(), resource -> { // <-- LÓGICA CORREGIDA
+        // El progressBar ya debería estar visible desde loadStudentAndGallery
+        //binding.progressBar.setVisibility(View.VISIBLE);
+        binding.recyclerView.setVisibility(View.GONE);
+        binding.tvEmpty.setVisibility(View.GONE);
+
+
+        viewModel.getGalleryByGroup(studentGroupName).observe(getViewLifecycleOwner(), resource -> {
+            if (!isAdded() || binding == null) return; // Verificar si el fragmento sigue vivo
+
             if (resource != null) {
                 switch (resource.getStatus()) {
                     case LOADING:
-                        binding.progressBar.setVisibility(View.VISIBLE);
+                        // Mantener progressBar visible
                         break;
-
                     case SUCCESS:
                         binding.progressBar.setVisibility(View.GONE);
                         if (resource.getData() != null && !resource.getData().isEmpty()) {
@@ -102,16 +130,23 @@ public class GalleryFragment extends Fragment {
                             adapter.submitList(resource.getData());
                         } else {
                             binding.recyclerView.setVisibility(View.GONE);
+                            binding.tvEmpty.setText("No hay fotos o videos en la galería del grupo.");
                             binding.tvEmpty.setVisibility(View.VISIBLE);
                         }
                         break;
-
                     case ERROR:
                         binding.progressBar.setVisibility(View.GONE);
-                        Toast.makeText(requireContext(), resource.getMessage(),
-                                Toast.LENGTH_SHORT).show();
+                        binding.recyclerView.setVisibility(View.GONE);
+                        binding.tvEmpty.setText("Error al cargar la galería: " + resource.getMessage());
+                        binding.tvEmpty.setVisibility(View.VISIBLE);
+                        //Toast.makeText(requireContext(), resource.getMessage(), Toast.LENGTH_SHORT).show(); // Opcional
                         break;
                 }
+            } else {
+                // Caso inesperado: resource es null
+                binding.progressBar.setVisibility(View.GONE);
+                binding.tvEmpty.setText("Ocurrió un error inesperado al cargar la galería.");
+                binding.tvEmpty.setVisibility(View.VISIBLE);
             }
         });
     }
@@ -119,6 +154,6 @@ public class GalleryFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        binding = null;
+        binding = null; // ¡Importante! Limpiar la referencia al binding
     }
 }

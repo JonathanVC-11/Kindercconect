@@ -1,7 +1,10 @@
 package com.example.kinderconnect.ui.parent;
 
 import android.animation.ValueAnimator;
-import android.graphics.Color;
+import android.content.Context; // ¡Añadido!
+import android.graphics.Bitmap; // ¡Añadido!
+import android.graphics.Canvas; // ¡Añadido!
+import android.graphics.drawable.Drawable; // ¡Añadido!
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -13,20 +16,24 @@ import android.view.animation.LinearInterpolator;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.DrawableRes; // ¡Añadido!
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.vectordrawable.graphics.drawable.VectorDrawableCompat; // ¡Añadido!
+
 
 import com.example.kinderconnect.R;
-import com.example.kinderconnect.data.model.BusStatus; // <-- IMPORTANTE: Usamos el nuevo modelo
+import com.example.kinderconnect.data.model.BusStatus;
 import com.example.kinderconnect.databinding.FragmentBusRouteBinding;
 import com.example.kinderconnect.utils.Resource;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor; // ¡Añadido!
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
@@ -41,8 +48,6 @@ import java.util.List;
 public class BusRouteFragment extends Fragment implements OnMapReadyCallback {
 
     private static final String TAG = "BusRouteFragment";
-
-    // Enum para los estados del bus
     private enum BusState { UNKNOWN, STOPPED, ACTIVE, FINISHED }
 
     private FragmentBusRouteBinding binding;
@@ -53,7 +58,6 @@ public class BusRouteFragment extends Fragment implements OnMapReadyCallback {
     private BusState currentBusState = BusState.UNKNOWN;
     private LatLng lastKnownBusLocation = null;
 
-    // Define tu ruta aquí
     private final List<LatLng> routePoints = Arrays.asList(
             new LatLng(19.4326, -99.1332), // Zócalo (Inicio)
             new LatLng(19.4340, -99.1405), // Catedral
@@ -74,7 +78,6 @@ public class BusRouteFragment extends Fragment implements OnMapReadyCallback {
         super.onViewCreated(view, savedInstanceState);
         viewModel = new ViewModelProvider(this).get(ParentViewModel.class);
 
-        // Configurar el SupportMapFragment
         SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager()
                 .findFragmentById(R.id.map);
         if (mapFragment != null) {
@@ -94,18 +97,16 @@ public class BusRouteFragment extends Fragment implements OnMapReadyCallback {
             return;
         }
 
-        // Dibuja la ruta y los marcadores
         drawRoutePolyline();
         addStartEndMarkers();
         zoomToRoute();
 
-        // Verificar si hay una acción pendiente por el estado del bus
         Log.d(TAG, "Mapa listo. Verificando estado actual: " + currentBusState);
         handleMapActionForState(currentBusState, lastKnownBusLocation);
     }
 
     private void drawRoutePolyline() {
-        if (mMap == null || routePoints.size() < 2) return;
+        if (mMap == null || routePoints.size() < 2 || getContext() == null) return;
         PolylineOptions polylineOptions = new PolylineOptions()
                 .addAll(routePoints)
                 .color(ContextCompat.getColor(requireContext(), R.color.purple_500))
@@ -133,44 +134,61 @@ public class BusRouteFragment extends Fragment implements OnMapReadyCallback {
         for (LatLng point : routePoints) {
             builder.include(point);
         }
-        mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 150));
-        Log.d(TAG, "Zoom ajustado para mostrar la ruta completa.");
+        try {
+            // Agregamos un try-catch por si el mapa se destruye justo antes de mover la cámara
+            mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 150));
+            Log.d(TAG, "Zoom ajustado para mostrar la ruta completa.");
+        } catch (IllegalStateException e) {
+            Log.e(TAG, "Error al mover la cámara, el mapa puede no estar listo: " + e.getMessage());
+        }
+
     }
 
     private void observeBusStatusUpdates() {
-        // --- ESTA ES LA SECCIÓN CORREGIDA ---
         viewModel.getBusStatusUpdates().observe(getViewLifecycleOwner(), resource -> {
             if (resource == null) return;
 
             switch (resource.getStatus()) {
                 case LOADING:
-                    // Puedes mostrar un indicador de carga si lo deseas
+                    //binding.progressStatus.setVisibility(View.VISIBLE); // Opcional
                     break;
                 case SUCCESS:
+                    //binding.progressStatus.setVisibility(View.GONE); // Opcional
                     if (resource.getData() != null) {
                         Log.d(TAG, "observeBusStatusUpdates: Estado SUCCESS recibido.");
-                        BusStatus busStatus = resource.getData(); // <-- EL CAMBIO CLAVE
+                        BusStatus busStatus = resource.getData();
                         String status = busStatus.getStatus();
 
                         LatLng newLatLng = null;
                         if (busStatus.getCurrentLocation() != null) {
                             GeoPoint geoPoint = busStatus.getCurrentLocation();
                             newLatLng = new LatLng(geoPoint.getLatitude(), geoPoint.getLongitude());
-                            lastKnownBusLocation = newLatLng; // Guardar última ubicación
+                            lastKnownBusLocation = newLatLng;
                         }
 
                         BusState newState = getBusStateFromString(status);
                         handleBusStatusUpdate(newState, newLatLng);
+                    } else {
+                        // Manejar caso donde el documento existe pero no tiene datos esperados?
+                        Log.w(TAG, "Datos de BusStatus recibidos pero son nulos.");
+                        handleBusStatusUpdate(BusState.UNKNOWN, null); // Volver a estado desconocido
                     }
                     break;
                 case ERROR:
+                    //binding.progressStatus.setVisibility(View.GONE); // Opcional
                     Log.e(TAG, "Error al observar estado del bus: " + resource.getMessage());
-                    Toast.makeText(getContext(), resource.getMessage(), Toast.LENGTH_SHORT).show();
+                    // Mostrar error en UI en lugar de Toast que desaparece
+                    if (binding != null) {
+                        binding.tvBusStatus.setText(resource.getMessage());
+                        binding.tvBusStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.error));
+                    }
+                    //Toast.makeText(getContext(), resource.getMessage(), Toast.LENGTH_SHORT).show();
+                    handleBusStatusUpdate(BusState.UNKNOWN, null); // Indicar estado desconocido en mapa
                     break;
             }
         });
-        // --- FIN DE LA SECCIÓN CORREGIDA ---
     }
+
 
     private BusState getBusStateFromString(String status) {
         if (status == null) return BusState.UNKNOWN;
@@ -179,28 +197,37 @@ public class BusRouteFragment extends Fragment implements OnMapReadyCallback {
                 return BusState.ACTIVE;
             case "FINISHED":
                 return BusState.FINISHED;
-            case "STOPPED":
+            case "STOPPED": // Asumimos STOPPED si no es ACTIVE o FINISHED
             default:
-                return BusState.STOPPED;
+                return BusState.STOPPED; // Cambiado de UNKNOWN a STOPPED como default razonable
         }
     }
 
+
     private void handleBusStatusUpdate(BusState newState, @Nullable LatLng newLocation) {
-        if (newState == currentBusState) {
-            // El estado no cambió, solo actualizar la ubicación si está activo
-            if (newState == BusState.ACTIVE && newLocation != null) {
-                animateBus(newLocation);
-            }
+        // Salir si el fragmento ya no está adjunto a una actividad
+        if (!isAdded() || getContext() == null) {
+            Log.w(TAG, "handleBusStatusUpdate llamado pero el fragmento no está adjunto.");
             return;
         }
+
+        if (newState == currentBusState && newState == BusState.ACTIVE && newLocation != null) {
+            // El estado no cambió, pero si está activo y hay nueva ubicación, animar
+            animateBus(newLocation);
+            return; // No necesita actualizar UI ni otras acciones del mapa
+        }
+
+        if (newState == currentBusState) {
+            // Si el estado no cambió y no es un movimiento activo, no hacer nada más
+            return;
+        }
+
 
         Log.d(TAG, "Estado CAMBIADO de '" + currentBusState + "' a '" + newState + "'. Actualizando UI/Mapa.");
         currentBusState = newState;
 
-        // Actualizar la UI (textos)
         updateUIForState(newState);
 
-        // Si el mapa no está listo, la acción se ejecutará en onMapReady
         if (mMap == null) {
             Log.w(TAG, "El mapa aún no está listo. Acción para estado '" + newState + "' pospuesta para onMapReady.");
             return;
@@ -210,7 +237,8 @@ public class BusRouteFragment extends Fragment implements OnMapReadyCallback {
     }
 
     private void updateUIForState(BusState state) {
-        TextView tvStatus = binding.tvBusStatus; // Asegúrate de tener este ID en tu XML
+        if (binding == null || getContext() == null) return; // Chequeo extra
+        TextView tvStatus = binding.tvBusStatus;
         switch (state) {
             case ACTIVE:
                 tvStatus.setText("Recorrido en curso...");
@@ -222,7 +250,7 @@ public class BusRouteFragment extends Fragment implements OnMapReadyCallback {
                 break;
             case STOPPED:
                 tvStatus.setText("El autobús está detenido");
-                tvStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.error));
+                tvStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.orange_500)); // Usar naranja para detenido
                 break;
             case UNKNOWN:
             default:
@@ -234,102 +262,196 @@ public class BusRouteFragment extends Fragment implements OnMapReadyCallback {
     }
 
     private void handleMapActionForState(BusState state, @Nullable LatLng location) {
+        if (!isAdded() || mMap == null) {
+            Log.w(TAG, "handleMapActionForState llamado pero el fragmento no está adjunto o el mapa es nulo.");
+            return; // Salir si el fragmento o el mapa ya no existen
+        }
+
         Log.d(TAG, "Manejando estado '" + state + "' en el mapa (mapa listo).");
 
-        // Detener animación anterior
         if (busAnimator != null) {
             busAnimator.cancel();
             Log.d(TAG, "Animación previa cancelada.");
         }
 
+        LatLng targetPosition = location; // Usar la ubicación recibida si existe
+
         switch (state) {
             case ACTIVE:
+                if (targetPosition == null) {
+                    // Si está activo pero no hay ubicación, usar la última conocida o el inicio
+                    targetPosition = (lastKnownBusLocation != null) ? lastKnownBusLocation : routePoints.get(0);
+                    Log.w(TAG,"Estado ACTIVE pero sin nueva ubicación, usando: " + targetPosition);
+                }
+
                 if (busMarker == null) {
-                    createBusMarker(location != null ? location : routePoints.get(0));
+                    createBusMarker(targetPosition); // Crear en la posición actual
                 }
-                if (location != null) {
-                    animateBus(location);
-                } else {
-                    // Si el estado es activo pero no hay location, usar el inicio de la ruta
-                    animateBus(routePoints.get(0));
-                }
-                Log.d(TAG, "Iniciando animación del bus...");
+                // Animar siempre si está activo (incluso si la posición no cambió, para asegurar visibilidad)
+                animateBus(targetPosition);
+                Log.d(TAG, "Estado ACTIVE: Iniciando/actualizando animación del bus a: " + targetPosition);
                 break;
             case FINISHED:
+                // Mover el marcador al final de la ruta si existe, sino ocultarlo
+                targetPosition = routePoints.get(routePoints.size() - 1);
                 if (busMarker != null) {
-                    busMarker.setPosition(routePoints.get(routePoints.size() - 1));
+                    busMarker.setPosition(targetPosition);
+                    busMarker.setVisible(true); // Asegurar que sea visible al finalizar
+                } else {
+                    createBusMarker(targetPosition); // Crear en el punto final
                 }
+                Log.d(TAG, "Estado FINISHED: Moviendo marcador al final: " + targetPosition);
                 break;
             case STOPPED:
+                if (targetPosition == null) {
+                    // Si está detenido y no hay ubicación, usar la última conocida o ocultar
+                    targetPosition = lastKnownBusLocation;
+                }
+
+                if(targetPosition != null) {
+                    if (busMarker == null) {
+                        createBusMarker(targetPosition);
+                    } else {
+                        busMarker.setPosition(targetPosition); // Mover a la última posición sin animar
+                        busMarker.setVisible(true); // Asegurar visibilidad
+                    }
+                    Log.d(TAG, "Estado STOPPED: Posicionando marcador en: " + targetPosition);
+                } else {
+                    // Si está detenido y no tenemos ninguna ubicación, ocultar
+                    if (busMarker != null) {
+                        busMarker.setVisible(false);
+                    }
+                    Log.d(TAG, "Estado STOPPED: Sin ubicación conocida, ocultando marcador.");
+                }
+                break;
             case UNKNOWN:
+                // Ocultar marcador si el estado es desconocido
                 if (busMarker != null) {
                     busMarker.setVisible(false);
                 }
+                Log.d(TAG, "Estado UNKNOWN: Ocultando marcador.");
                 break;
+
         }
     }
 
+    // --- ¡¡NUEVA FUNCIÓN DE AYUDA!! ---
+    private BitmapDescriptor bitmapDescriptorFromVector(Context context, @DrawableRes int vectorResId) {
+        Drawable vectorDrawable = ContextCompat.getDrawable(context, vectorResId);
+        if (vectorDrawable == null) {
+            Log.e(TAG, "Vector drawable no encontrado: " + vectorResId);
+            // Fallback a un marcador default si no se encuentra el drawable
+            return BitmapDescriptorFactory.defaultMarker();
+        }
+        vectorDrawable.setBounds(0, 0, vectorDrawable.getIntrinsicWidth(), vectorDrawable.getIntrinsicHeight());
+        Bitmap bitmap = Bitmap.createBitmap(vectorDrawable.getIntrinsicWidth(), vectorDrawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        vectorDrawable.draw(canvas);
+        return BitmapDescriptorFactory.fromBitmap(bitmap);
+    }
+
+
     private void createBusMarker(LatLng startPosition) {
-        if (mMap == null) return;
+        if (mMap == null || getContext() == null) return;
+
+        // --- ¡¡LÍNEA MODIFICADA AQUÍ!! ---
+        BitmapDescriptor icon = bitmapDescriptorFromVector(requireContext(), R.drawable.ic_bus_marker);
+
         busMarker = mMap.addMarker(new MarkerOptions()
                 .position(startPosition)
                 .title("Autobús Escolar")
-                .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_bus_marker)) // Asegúrate de tener este drawable
+                //.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_bus_marker)) // <-- Línea original que fallaba
+                .icon(icon) // <-- Usamos el BitmapDescriptor generado
                 .anchor(0.5f, 0.5f)
                 .flat(true));
         Log.d(TAG, "Marcador del bus creado en lat/lng: " + startPosition.toString());
     }
 
     private void animateBus(LatLng newPosition) {
-        if (busMarker == null) {
-            createBusMarker(newPosition);
+        // Asegurarse que el fragmento esté añadido y el contexto disponible
+        if (!isAdded() || getContext() == null || busMarker == null) {
+            // Si el marcador no existe aún (puede pasar si el estado cambió antes de onMapReady),
+            // lo creamos ahora en la nueva posición.
+            if (mMap != null && busMarker == null) {
+                Log.w(TAG,"animateBus llamado pero el marcador era nulo. Creando en: " + newPosition);
+                createBusMarker(newPosition);
+                if (busMarker == null) { // Si aún así falla la creación, salir
+                    Log.e(TAG, "Fallo al crear el marcador en animateBus.");
+                    return;
+                }
+            } else if (busMarker == null) {
+                Log.w(TAG, "animateBus llamado pero el marcador es nulo y/o el fragmento no está adjunto.");
+                return; // Salir si no se puede crear o el fragmento no está listo
+            }
         }
-        if (busMarker == null) return; // Si sigue siendo nulo, salir
+
 
         busMarker.setVisible(true);
         final LatLng startPosition = busMarker.getPosition();
         final LatLng endPosition = newPosition;
 
+        // Si la posición inicial y final son muy cercanas, solo mover, no animar
+        if (Math.abs(startPosition.latitude - endPosition.latitude) < 0.00001 &&
+                Math.abs(startPosition.longitude - endPosition.longitude) < 0.00001) {
+            busMarker.setPosition(endPosition);
+            return;
+        }
+
         if (busAnimator != null) {
             busAnimator.cancel();
         }
 
-        // Usar un Handler para asegurar que la animación ocurra en el hilo principal
+        // Usar post para asegurar ejecución en UI thread
         new Handler(Looper.getMainLooper()).post(() -> {
+            // Chequeo adicional dentro del post por si el estado cambió mientras esperaba
+            if (busMarker == null || !isAdded()) return;
+
             busAnimator = ValueAnimator.ofFloat(0, 1);
-            busAnimator.setDuration(3000); // 3 segundos para la animación entre puntos
+            busAnimator.setDuration(3000); // 3 segundos para animar
             busAnimator.setInterpolator(new LinearInterpolator());
             busAnimator.addUpdateListener(animator -> {
+                // Try-catch para evitar crashes si el marcador se vuelve nulo durante la animación
                 try {
+                    if (busMarker == null) {
+                        animator.cancel(); // Detener si el marcador desapareció
+                        return;
+                    }
                     float v = animator.getAnimatedFraction();
                     double lat = (1 - v) * startPosition.latitude + v * endPosition.latitude;
                     double lng = (1 - v) * startPosition.longitude + v * endPosition.longitude;
                     LatLng interpolatedPosition = new LatLng(lat, lng);
                     busMarker.setPosition(interpolatedPosition);
-                    busMarker.setRotation(getBearing(startPosition, endPosition));
+                    // Solo rotar si hay un cambio significativo de posición para evitar rotación errática
+                    if (Math.abs(startPosition.latitude - endPosition.latitude) > 0.00001 ||
+                            Math.abs(startPosition.longitude - endPosition.longitude) > 0.00001) {
+                        busMarker.setRotation(getBearing(startPosition, endPosition));
+                    }
                 } catch (Exception e) {
-                    Log.e(TAG, "Error durante la animación", e);
+                    Log.e(TAG, "Error durante la animación del bus", e);
                     if (busAnimator != null) busAnimator.cancel();
                 }
             });
             busAnimator.start();
-            Log.d(TAG, "Animación iniciada (duración: 3000ms).");
+            Log.d(TAG, "Animación iniciada de " + startPosition + " a " + endPosition);
         });
     }
 
-    private float getBearing(LatLng begin, LatLng end) {
-        double lat = Math.abs(begin.latitude - end.latitude);
-        double lng = Math.abs(begin.longitude - end.longitude);
 
-        if (begin.latitude < end.latitude && begin.longitude < end.longitude)
-            return (float) (Math.toDegrees(Math.atan(lng / lat)));
-        else if (begin.latitude >= end.latitude && begin.longitude < end.longitude)
-            return (float) ((90 - Math.toDegrees(Math.atan(lng / lat))) + 90);
-        else if (begin.latitude >= end.latitude && begin.longitude >= end.longitude)
-            return (float) (Math.toDegrees(Math.atan(lng / lat)) + 180);
-        else if (begin.latitude < end.latitude && begin.longitude >= end.longitude)
-            return (float) ((90 - Math.toDegrees(Math.atan(lng / lat))) + 270);
-        return -1;
+    private float getBearing(LatLng begin, LatLng end) {
+        // Corrección para evitar división por cero y manejar cálculo de ángulo
+        double lat1 = Math.toRadians(begin.latitude);
+        double lon1 = Math.toRadians(begin.longitude);
+        double lat2 = Math.toRadians(end.latitude);
+        double lon2 = Math.toRadians(end.longitude);
+
+        double longitudeDifference = lon2 - lon1;
+
+        double y = Math.sin(longitudeDifference) * Math.cos(lat2);
+        double x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(longitudeDifference);
+
+        double bearing = Math.toDegrees(Math.atan2(y, x));
+        // Normalizar a 0-360 grados
+        return (float)(bearing + 360) % 360;
     }
 
     @Override
@@ -340,8 +462,8 @@ public class BusRouteFragment extends Fragment implements OnMapReadyCallback {
             busAnimator.cancel();
             Log.d(TAG, "Animación cancelada.");
         }
-        mMap = null;
-        busMarker = null;
-        binding = null;
+        mMap = null; // Liberar referencia al mapa
+        busMarker = null; // Liberar referencia al marcador
+        binding = null; // ¡Importante! Liberar binding
     }
 }

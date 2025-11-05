@@ -87,4 +87,9 @@ public class ParentViewModel extends ViewModel {
     public LiveData<Resource<List<GalleryItem>>> getGalleryByGroup(String groupName) {
         return galleryRepository.getGalleryByGroup(groupName);
     }
+
+    // --- ¡¡NUEVO MÉTODO AÑADIDO AQUÍ!! ---
+    public LiveData<Resource<Notice>> getNoticeById(String noticeId) {
+        return noticeRepository.getNoticeById(noticeId);
+    }
 }

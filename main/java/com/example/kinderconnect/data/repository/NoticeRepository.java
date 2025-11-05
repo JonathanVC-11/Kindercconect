@@ -143,4 +143,26 @@ public class NoticeRepository {
 
         return result;
     }
+
+    // --- ¡¡NUEVO MÉTODO AÑADIDO AQUÍ!! ---
+    public LiveData<Resource<Notice>> getNoticeById(String noticeId) {
+        MutableLiveData<Resource<Notice>> result = new MutableLiveData<>();
+        result.setValue(Resource.loading(null));
+
+        firestore.collection(Constants.COLLECTION_NOTICES)
+                .document(noticeId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        Notice notice = documentSnapshot.toObject(Notice.class);
+                        result.setValue(Resource.success(notice));
+                    } else {
+                        result.setValue(Resource.error("No se encontró el aviso", null));
+                    }
+                })
+                .addOnFailureListener(e -> result.setValue(Resource.error(
+                        "Error: " + e.getMessage(), null)));
+
+        return result;
+    }
 }

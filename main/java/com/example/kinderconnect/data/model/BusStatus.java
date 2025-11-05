@@ -7,8 +7,14 @@ import java.util.Date;
 public class BusStatus {
     private String status; // "STOPPED", "ACTIVE", "FINISHED"
     private GeoPoint currentLocation;
+
+    // --- CAMPOS CORREGIDOS Y AÑADIDOS ---
     @ServerTimestamp
-    private Date lastUpdate;
+    private Date lastUpdateTime; // Coincide con el nombre en BusTrackingRepository
+    @ServerTimestamp
+    private Date startTime; // Añadido
+    @ServerTimestamp
+    private Date endTime; // Añadido
 
     public BusStatus() {
         // Constructor vacío
@@ -31,11 +37,29 @@ public class BusStatus {
         this.currentLocation = currentLocation;
     }
 
-    public Date getLastUpdate() {
-        return lastUpdate;
+    // --- MÉTODOS CORREGIDOS Y AÑADIDOS ---
+    public Date getLastUpdateTime() {
+        return lastUpdateTime;
     }
 
-    public void setLastUpdate(Date lastUpdate) {
-        this.lastUpdate = lastUpdate;
+    public void setLastUpdateTime(Date lastUpdateTime) {
+        this.lastUpdateTime = lastUpdateTime;
     }
+
+    public Date getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(Date startTime) {
+        this.startTime = startTime;
+    }
+
+    public Date getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(Date endTime) {
+        this.endTime = endTime;
+    }
+
 }

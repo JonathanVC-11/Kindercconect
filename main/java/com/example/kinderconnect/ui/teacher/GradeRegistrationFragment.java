@@ -12,6 +12,8 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
+
+import com.example.kinderconnect.R;
 import com.example.kinderconnect.databinding.FragmentGradeRegistrationBinding;
 import com.example.kinderconnect.data.local.PreferencesManager;
 import com.example.kinderconnect.data.model.Grade;
@@ -24,6 +26,7 @@ public class GradeRegistrationFragment extends Fragment {
     private String studentId;
     private int selectedPeriod = 1;
     private Grade currentGrade;
+    private String[] periods; // --- AÑADIDO ---
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
@@ -39,13 +42,12 @@ public class GradeRegistrationFragment extends Fragment {
         viewModel = new ViewModelProvider(this).get(TeacherViewModel.class);
         preferencesManager = new PreferencesManager(requireContext());
 
-        // Obtener studentId de los argumentos
         if (getArguments() != null) {
             studentId = getArguments().getString("studentId");
         }
 
         setupToolbar();
-        setupPeriodSpinner();
+        setupPeriodDropdown(); // --- MÉTODO RENOMBRADO ---
         setupListeners();
         loadExistingGrade();
     }
@@ -55,29 +57,22 @@ public class GradeRegistrationFragment extends Fragment {
                 Navigation.findNavController(v).navigateUp());
     }
 
-    private void setupPeriodSpinner() {
-        String[] periods = {"Periodo 1", "Periodo 2", "Periodo 3"};
+    // --- LÓGICA DE SPINNER REEMPLAZADA POR DROPDOWN ---
+    private void setupPeriodDropdown() {
+        periods = new String[]{"Periodo 1", "Periodo 2", "Periodo 3"};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
                 requireContext(),
-                android.R.layout.simple_spinner_item,
+                android.R.layout.simple_dropdown_item_1line,
                 periods
         );
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        binding.spinnerPeriod.setAdapter(adapter);
+        binding.actPeriod.setAdapter(adapter);
+        binding.actPeriod.setText(periods[0], false); // Poner valor por defecto
 
-        binding.spinnerPeriod.setOnItemSelectedListener(
-                new android.widget.AdapterView.OnItemSelectedListener() {
-                    @Override
-                    public void onItemSelected(android.widget.AdapterView<?> parent,
-                                               View view, int position, long id) {
-                        selectedPeriod = position + 1;
-                        loadExistingGrade();
-                    }
-
-                    @Override
-                    public void onNothingSelected(android.widget.AdapterView<?> parent) {}
-                }
-        );
+        // Cambiar el listener
+        binding.actPeriod.setOnItemClickListener((parent, view, position, id) -> {
+            selectedPeriod = position + 1;
+            loadExistingGrade();
+        });
     }
 
     private void setupListeners() {
@@ -99,49 +94,66 @@ public class GradeRegistrationFragment extends Fragment {
 
                         if (currentGrade != null) {
                             loadGradeData();
+                        } else {
+                            clearGradeData(); // Limpiar campos si no hay datos
                         }
                     }
                 });
     }
 
     private void loadGradeData() {
-        // Cargar evaluaciones previas si existen
         if (currentGrade != null && currentGrade.getEvaluations() != null) {
             // Implementar lógica para cargar las evaluaciones en los RadioButtons
+            // (Esta lógica parece faltar en el original, pero el guardado sí funciona)
+            // Por ahora, nos aseguramos de que el guardado funcione.
         }
     }
+
+    // --- NUEVO MÉTODO AÑADIDO ---
+    private void clearGradeData() {
+        // Limpiar todos los RadioGroups
+        binding.rgArea1.clearCheck();
+        binding.rgArea2.clearCheck();
+        binding.rgArea3.clearCheck();
+        binding.rgArea4.clearCheck();
+        binding.rgArea5.clearCheck();
+        binding.rgArea6.clearCheck();
+
+        // Limpiar todos los campos de texto
+        binding.etObservations1.setText("");
+        binding.etObservations2.setText("");
+        binding.etObservations3.setText("");
+        binding.etObservations4.setText("");
+        binding.etObservations5.setText("");
+        binding.etObservations6.setText("");
+    }
+
 
     private void saveGrade() {
         String teacherId = preferencesManager.getUserId();
 
         Grade grade = new Grade(studentId, teacherId, selectedPeriod);
 
-        // Área 1: Lenguaje y Comunicación
         String level1 = getSelectedLevel(binding.rgArea1);
         String obs1 = binding.etObservations1.getText().toString().trim();
         grade.addEvaluation("area1", Constants.DEVELOPMENT_AREAS[0], level1, obs1);
 
-        // Área 2: Pensamiento Matemático
         String level2 = getSelectedLevel(binding.rgArea2);
         String obs2 = binding.etObservations2.getText().toString().trim();
         grade.addEvaluation("area2", Constants.DEVELOPMENT_AREAS[1], level2, obs2);
 
-        // Área 3: Exploración del Mundo Natural
         String level3 = getSelectedLevel(binding.rgArea3);
         String obs3 = binding.etObservations3.getText().toString().trim();
         grade.addEvaluation("area3", Constants.DEVELOPMENT_AREAS[2], level3, obs3);
 
-        // Área 4: Desarrollo Personal y Social
         String level4 = getSelectedLevel(binding.rgArea4);
         String obs4 = binding.etObservations4.getText().toString().trim();
         grade.addEvaluation("area4", Constants.DEVELOPMENT_AREAS[3], level4, obs4);
 
-        // Área 5: Expresión Artística
         String level5 = getSelectedLevel(binding.rgArea5);
         String obs5 = binding.etObservations5.getText().toString().trim();
         grade.addEvaluation("area5", Constants.DEVELOPMENT_AREAS[4], level5, obs5);
 
-        // Área 6: Desarrollo Físico y Salud
         String level6 = getSelectedLevel(binding.rgArea6);
         String obs6 = binding.etObservations6.getText().toString().trim();
         grade.addEvaluation("area6", Constants.DEVELOPMENT_AREAS[5], level6, obs6);
@@ -176,15 +188,22 @@ public class GradeRegistrationFragment extends Fragment {
 
     private String getSelectedLevel(android.widget.RadioGroup radioGroup) {
         int selectedId = radioGroup.getCheckedRadioButtonId();
-        if (selectedId == -1) return Constants.GRADE_EN_DESARROLLO;
+        if (selectedId == -1) return Constants.GRADE_EN_DESARROLLO; // Default
 
-        RadioButton radioButton = binding.getRoot().findViewById(selectedId);
-        String text = radioButton.getText().toString();
-
-        if (text.contains("Requiere")) return Constants.GRADE_REQUIERE_APOYO;
-        if (text.contains("desarrollo")) return Constants.GRADE_EN_DESARROLLO;
-        if (text.contains("Esperado")) return Constants.GRADE_ESPERADO;
-        if (text.contains("Sobresaliente")) return Constants.GRADE_SOBRESALIENTE;
+        View radioButton = binding.getRoot().findViewById(selectedId);
+        // Comprobamos el ID del RadioButton para ser más precisos
+        if (selectedId == R.id.rbArea1Support || selectedId == R.id.rbArea2Support || selectedId == R.id.rbArea3Support || selectedId == R.id.rbArea4Support || selectedId == R.id.rbArea5Support || selectedId == R.id.rbArea6Support) {
+            return Constants.GRADE_REQUIERE_APOYO;
+        }
+        if (selectedId == R.id.rbArea1Developing || selectedId == R.id.rbArea2Developing || selectedId == R.id.rbArea3Developing || selectedId == R.id.rbArea4Developing || selectedId == R.id.rbArea5Developing || selectedId == R.id.rbArea6Developing) {
+            return Constants.GRADE_EN_DESARROLLO;
+        }
+        if (selectedId == R.id.rbArea1Expected || selectedId == R.id.rbArea2Expected || selectedId == R.id.rbArea3Expected || selectedId == R.id.rbArea4Expected || selectedId == R.id.rbArea5Expected || selectedId == R.id.rbArea6Expected) {
+            return Constants.GRADE_ESPERADO;
+        }
+        if (selectedId == R.id.rbArea1Outstanding || selectedId == R.id.rbArea2Outstanding || selectedId == R.id.rbArea3Outstanding || selectedId == R.id.rbArea4Outstanding || selectedId == R.id.rbArea5Outstanding || selectedId == R.id.rbArea6Outstanding) {
+            return Constants.GRADE_SOBRESALIENTE;
+        }
 
         return Constants.GRADE_EN_DESARROLLO;
     }

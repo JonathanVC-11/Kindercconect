@@ -1,5 +1,10 @@
 package com.example.kinderconnect.utils;
 
+import com.google.firebase.firestore.GeoPoint;
+import java.util.Arrays;
+import java.util.List;
+
+
 public class Constants {
     // Firestore Collections
     public static final String COLLECTION_USERS = "users";
@@ -84,4 +89,19 @@ public class Constants {
     public static final int PERIOD_1 = 1;
     public static final int PERIOD_2 = 2;
     public static final int PERIOD_3 = 3;
+
+
+    // --- RUTA DE SIMULACIÓN MODIFICADA (MÁS CORTA Y VISIBLE) ---
+    public static final List<GeoPoint> SIMULATION_ROUTE = Arrays.asList(
+            new GeoPoint(19.4326, -99.1332), // 1. Zócalo (Inicio)
+            new GeoPoint(19.4340, -99.1332), // 2. Lado Catedral (Norte)
+            new GeoPoint(19.4340, -99.1317), // 3. Esquina Noreste
+            new GeoPoint(19.4326, -99.1317), // 4. Lado Palacio Nacional (Este)
+            new GeoPoint(19.4312, -99.1317), // 5. Esquina Sureste
+            new GeoPoint(19.4312, -99.1332), // 6. Lado Ayuntamiento (Sur)
+            new GeoPoint(19.4312, -99.1347), // 7. Esquina Suroeste
+            new GeoPoint(19.4326, -99.1347), // 8. Lado Oeste
+            new GeoPoint(19.4326, -99.1332)  // 9. De vuelta al inicio
+    );
+    // -----------------------------------------------------------
 }

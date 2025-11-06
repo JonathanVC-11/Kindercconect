@@ -4,16 +4,16 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/background_light">
+    android:background="?attr/colorSurface">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="@color/purple_500"
+        android:background="?attr/colorPrimary"
         app:title="Registrar Calificaciones"
-        app:titleTextColor="@color/white"
-        app:navigationIcon="@android:drawable/ic_menu_close_clear_cancel" />
+        app:titleTextColor="?attr/colorOnPrimary"
+        app:navigationIcon="@drawable/ic_close" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -27,22 +27,24 @@
             android:orientation="vertical"
             android:padding="@dimen/padding_large">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/period"
-                android:textSize="@dimen/text_size_medium"
-                android:textStyle="bold"
-                android:layout_marginBottom="@dimen/margin_small"
-                android:layout_marginTop="@dimen/margin_normal" />
-
-            <Spinner
-                android:id="@+id/spinnerPeriod"
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilPeriod"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="@dimen/margin_large" />
+                android:layout_marginTop="@dimen/margin_normal"
+                android:layout_marginBottom="@dimen/margin_large"
+                android:hint="@string/period">
 
-            <!-- Área 1 (Lenguaje) -->
+                <AutoCompleteTextView
+                    android:id="@+id/actPeriod"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none"
+                    android:editable="false"/>
+
+            </com.google.android.material.textfield.TextInputLayout>
+
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -59,30 +61,37 @@
                         android:text="@string/area_language"
                         android:textSize="@dimen/text_size_medium"
                         android:textStyle="bold"
-                        android:textColor="@color/text_primary" />
+                        android:textColor="?attr/colorOnSurface" />
+
                     <RadioGroup
                         android:id="@+id/rgArea1"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
+                        android:orientation="vertical"
                         android:layout_marginTop="@dimen/margin_small">
                         <RadioButton android:id="@+id/rbArea1Support" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/requires_support" />
                         <RadioButton android:id="@+id/rbArea1Developing" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/in_development" />
                         <RadioButton android:id="@+id/rbArea1Expected" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/expected" />
                         <RadioButton android:id="@+id/rbArea1Outstanding" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/outstanding" />
                     </RadioGroup>
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etObservations1"
+
+                    <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="@string/observations"
-                        android:inputType="textMultiLine"
-                        android:minLines="2"
-                        android:layout_marginTop="@dimen/margin_small" />
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_marginTop="@dimen/margin_small"
+                        android:hint="@string/observations">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etObservations1"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textMultiLine"
+                            android:minLines="2" />
+                    </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Área 2 (Matemáticas) -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -99,30 +108,37 @@
                         android:text="@string/area_math"
                         android:textSize="@dimen/text_size_medium"
                         android:textStyle="bold"
-                        android:textColor="@color/text_primary" />
+                        android:textColor="?attr/colorOnSurface" />
+
                     <RadioGroup
                         android:id="@+id/rgArea2"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
+                        android:orientation="vertical"
                         android:layout_marginTop="@dimen/margin_small">
                         <RadioButton android:id="@+id/rbArea2Support" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/requires_support" />
                         <RadioButton android:id="@+id/rbArea2Developing" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/in_development" />
                         <RadioButton android:id="@+id/rbArea2Expected" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/expected" />
                         <RadioButton android:id="@+id/rbArea2Outstanding" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/outstanding" />
                     </RadioGroup>
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etObservations2"
+
+                    <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="@string/observations"
-                        android:inputType="textMultiLine"
-                        android:minLines="2"
-                        android:layout_marginTop="@dimen/margin_small" />
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_marginTop="@dimen/margin_small"
+                        android:hint="@string/observations">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etObservations2"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textMultiLine"
+                            android:minLines="2" />
+                    </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Área 3 (Ciencias) -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -139,30 +155,34 @@
                         android:text="@string/area_nature"
                         android:textSize="@dimen/text_size_medium"
                         android:textStyle="bold"
-                        android:textColor="@color/text_primary" />
+                        android:textColor="?attr/colorOnSurface" />
                     <RadioGroup
                         android:id="@+id/rgArea3"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
+                        android:orientation="vertical"
                         android:layout_marginTop="@dimen/margin_small">
                         <RadioButton android:id="@+id/rbArea3Support" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/requires_support" />
                         <RadioButton android:id="@+id/rbArea3Developing" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/in_development" />
                         <RadioButton android:id="@+id/rbArea3Expected" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/expected" />
                         <RadioButton android:id="@+id/rbArea3Outstanding" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/outstanding" />
                     </RadioGroup>
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etObservations3"
+                    <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="@string/observations"
-                        android:inputType="textMultiLine"
-                        android:minLines="2"
-                        android:layout_marginTop="@dimen/margin_small" />
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_marginTop="@dimen/margin_small"
+                        android:hint="@string/observations">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etObservations3"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textMultiLine"
+                            android:minLines="2" />
+                    </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Área 4 (Social) -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -179,30 +199,34 @@
                         android:text="@string/area_social"
                         android:textSize="@dimen/text_size_medium"
                         android:textStyle="bold"
-                        android:textColor="@color/text_primary" />
+                        android:textColor="?attr/colorOnSurface" />
                     <RadioGroup
                         android:id="@+id/rgArea4"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
+                        android:orientation="vertical"
                         android:layout_marginTop="@dimen/margin_small">
                         <RadioButton android:id="@+id/rbArea4Support" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/requires_support" />
                         <RadioButton android:id="@+id/rbArea4Developing" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/in_development" />
                         <RadioButton android:id="@+id/rbArea4Expected" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/expected" />
                         <RadioButton android:id="@+id/rbArea4Outstanding" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/outstanding" />
                     </RadioGroup>
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etObservations4"
+                    <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="@string/observations"
-                        android:inputType="textMultiLine"
-                        android:minLines="2"
-                        android:layout_marginTop="@dimen/margin_small" />
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_marginTop="@dimen/margin_small"
+                        android:hint="@string/observations">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etObservations4"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textMultiLine"
+                            android:minLines="2" />
+                    </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Área 5 (Artística) -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -219,30 +243,34 @@
                         android:text="@string/area_art"
                         android:textSize="@dimen/text_size_medium"
                         android:textStyle="bold"
-                        android:textColor="@color/text_primary" />
+                        android:textColor="?attr/colorOnSurface" />
                     <RadioGroup
                         android:id="@+id/rgArea5"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
+                        android:orientation="vertical"
                         android:layout_marginTop="@dimen/margin_small">
                         <RadioButton android:id="@+id/rbArea5Support" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/requires_support" />
                         <RadioButton android:id="@+id/rbArea5Developing" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/in_development" />
                         <RadioButton android:id="@+id/rbArea5Expected" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/expected" />
                         <RadioButton android:id="@+id/rbArea5Outstanding" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/outstanding" />
                     </RadioGroup>
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etObservations5"
+                    <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="@string/observations"
-                        android:inputType="textMultiLine"
-                        android:minLines="2"
-                        android:layout_marginTop="@dimen/margin_small" />
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_marginTop="@dimen/margin_small"
+                        android:hint="@string/observations">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etObservations5"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textMultiLine"
+                            android:minLines="2" />
+                    </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Área 6 (Física) -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -259,26 +287,32 @@
                         android:text="@string/area_physical"
                         android:textSize="@dimen/text_size_medium"
                         android:textStyle="bold"
-                        android:textColor="@color/text_primary" />
+                        android:textColor="?attr/colorOnSurface" />
                     <RadioGroup
                         android:id="@+id/rgArea6"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
+                        android:orientation="vertical"
                         android:layout_marginTop="@dimen/margin_small">
                         <RadioButton android:id="@+id/rbArea6Support" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/requires_support" />
                         <RadioButton android:id="@+id/rbArea6Developing" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/in_development" />
                         <RadioButton android:id="@+id/rbArea6Expected" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/expected" />
                         <RadioButton android:id="@+id/rbArea6Outstanding" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/outstanding" />
                     </RadioGroup>
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etObservations6"
+
+                    <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="@string/observations"
-                        android:inputType="textMultiLine"
-                        android:minLines="2"
-                        android:layout_marginTop="@dimen/margin_small" />
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_marginTop="@dimen/margin_small"
+                        android:hint="@string/observations">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etObservations6"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textMultiLine"
+                            android:minLines="2" />
+                    </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

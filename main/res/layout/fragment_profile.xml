@@ -1,18 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/background_light">
+    android:background="?attr/colorSurface">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="@color/purple_500"
+        android:background="?attr/colorPrimary"
         app:title="@string/nav_profile"
-        app:titleTextColor="@color/white" />
+        app:titleTextColor="?attr/colorOnPrimary" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -24,17 +25,39 @@
             android:orientation="vertical"
             android:padding="@dimen/padding_large">
 
-            <!-- Profile Picture -->
-            <ImageView
-                android:id="@+id/ivProfilePhoto"
+            <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="120dp"
                 android:layout_height="120dp"
-                android:src="@drawable/ic_logo"
                 android:layout_gravity="center"
-                android:layout_marginBottom="@dimen/margin_large"
-                android:contentDescription="@string/nav_profile" />
+                android:layout_marginBottom="@dimen/margin_large">
 
-            <!-- User Info Card -->
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/ivProfilePhoto"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_logo"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
+                    app:strokeColor="?attr/colorPrimary"
+                    app:strokeWidth="2dp" />
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/fabEditPhoto"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/ic_edit"
+                    app:backgroundTint="?attr/colorSurface"
+                    app:tint="?attr/colorPrimary"
+                    app:fabCustomSize="40dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -54,7 +77,7 @@
                         android:text="Información Personal"
                         android:textSize="@dimen/text_size_large"
                         android:textStyle="bold"
-                        android:textColor="@color/text_primary"
+                        android:textColor="?attr/colorOnSurface"
                         android:layout_marginBottom="@dimen/margin_normal" />
 
                     <TextView
@@ -62,16 +85,16 @@
                         android:layout_height="wrap_content"
                         android:text="Nombre"
                         android:textSize="@dimen/text_size_small"
-                        android:textColor="@color/text_secondary" />
+                        android:textColor="?attr/colorOnSurfaceVariant" />
 
                     <TextView
                         android:id="@+id/tvUserName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Usuario"
+                        tools:text="Usuario"
                         android:textSize="@dimen/text_size_medium"
                         android:textStyle="bold"
-                        android:textColor="@color/text_primary"
+                        android:textColor="?attr/colorOnSurface"
                         android:layout_marginBottom="@dimen/margin_normal" />
 
                     <TextView
@@ -79,16 +102,16 @@
                         android:layout_height="wrap_content"
                         android:text="Correo electrónico"
                         android:textSize="@dimen/text_size_small"
-                        android:textColor="@color/text_secondary" />
+                        android:textColor="?attr/colorOnSurfaceVariant" />
 
                     <TextView
                         android:id="@+id/tvUserEmail"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="correo@ejemplo.com"
+                        tools:text="correo@ejemplo.com"
                         android:textSize="@dimen/text_size_medium"
                         android:textStyle="bold"
-                        android:textColor="@color/text_primary"
+                        android:textColor="?attr/colorOnSurface"
                         android:layout_marginBottom="@dimen/margin_normal" />
 
                     <TextView
@@ -96,28 +119,35 @@
                         android:layout_height="wrap_content"
                         android:text="Tipo de usuario"
                         android:textSize="@dimen/text_size_small"
-                        android:textColor="@color/text_secondary" />
+                        android:textColor="?attr/colorOnSurfaceVariant" />
 
                     <TextView
                         android:id="@+id/tvUserType"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Tipo"
+                        tools:text="Tipo"
                         android:textSize="@dimen/text_size_medium"
                         android:textStyle="bold"
-                        android:textColor="@color/text_primary" />
+                        android:textColor="?attr/colorOnSurface" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Logout Button -->
+            <ProgressBar
+                android:id="@+id/progressBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:visibility="gone"
+                android:layout_marginBottom="@dimen/margin_normal"/>
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnLogout"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/button_height"
                 android:text="@string/logout"
-                android:textColor="@color/error"
-                app:strokeColor="@color/error" />
+                android:textColor="?attr/colorError"
+                app:strokeColor="?attr/colorError" />
 
         </LinearLayout>
     </ScrollView>

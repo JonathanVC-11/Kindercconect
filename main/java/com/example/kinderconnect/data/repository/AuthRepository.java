@@ -19,7 +19,6 @@ public class AuthRepository {
         this.firebaseAuth = FirebaseAuth.getInstance();
         this.firestore = FirebaseFirestore.getInstance();
 
-        // Habilitar persistencia offline (está habilitado por defecto en Android)
         FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
                 .setPersistenceEnabled(true)
                 .build();
@@ -27,7 +26,6 @@ public class AuthRepository {
 
         this.userLiveData = new MutableLiveData<>();
 
-        // Observar cambios en el estado de autenticación
         firebaseAuth.addAuthStateListener(auth -> {
             FirebaseUser user = auth.getCurrentUser();
             userLiveData.postValue(user);
@@ -54,8 +52,6 @@ public class AuthRepository {
         return result;
     }
 
-    // --- CAMBIO AQUÍ ---
-    // Se añadió 'String phone' a los parámetros
     public LiveData<Resource<FirebaseUser>> registerUser(String email, String password,
                                                          String fullName, String phone, String userType) {
         MutableLiveData<Resource<FirebaseUser>> result = new MutableLiveData<>();
@@ -66,9 +62,6 @@ public class AuthRepository {
                     if (task.isSuccessful()) {
                         FirebaseUser firebaseUser = firebaseAuth.getCurrentUser();
                         if (firebaseUser != null) {
-
-                            // --- CAMBIO AQUÍ ---
-                            // Se pasa 'phone' al constructor del User
                             User user = new User(firebaseUser.getUid(), email, fullName, userType, phone);
                             saveUserToFirestore(user, result, firebaseUser);
                         }
@@ -113,6 +106,21 @@ public class AuthRepository {
 
         return result;
     }
+
+    // --- NUEVO MÉTODO AÑADIDO ---
+    public LiveData<Resource<Void>> updateUserPhotoUrl(String uid, String photoUrl) {
+        MutableLiveData<Resource<Void>> result = new MutableLiveData<>();
+        result.setValue(Resource.loading(null));
+
+        firestore.collection(Constants.COLLECTION_USERS)
+                .document(uid)
+                .update("photoUrl", photoUrl)
+                .addOnSuccessListener(aVoid -> result.setValue(Resource.success(null)))
+                .addOnFailureListener(e -> result.setValue(Resource.error("Error al actualizar foto: " + e.getMessage(), null)));
+
+        return result;
+    }
+    // ----------------------------
 
     public void logout() {
         firebaseAuth.signOut();

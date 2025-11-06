@@ -8,8 +8,10 @@ import android.widget.ArrayAdapter;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import com.example.kinderconnect.R; // <-- AÑADIDO
 import com.example.kinderconnect.databinding.FragmentGradeViewBinding;
 import com.example.kinderconnect.data.local.PreferencesManager;
 import com.example.kinderconnect.data.model.Grade;
@@ -21,6 +23,7 @@ public class GradeViewFragment extends Fragment {
     private PreferencesManager preferencesManager;
     private String studentId;
     private int selectedPeriod = 1;
+    private String[] periods; // --- AÑADIDO ---
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
@@ -36,33 +39,26 @@ public class GradeViewFragment extends Fragment {
         viewModel = new ViewModelProvider(this).get(ParentViewModel.class);
         preferencesManager = new PreferencesManager(requireContext());
 
-        setupPeriodSpinner();
+        setupPeriodDropdown(); // --- MÉTODO RENOMBRADO ---
         loadStudentData();
     }
 
-    private void setupPeriodSpinner() {
-        String[] periods = {"Periodo 1", "Periodo 2", "Periodo 3"};
+    // --- LÓGICA DE SPINNER REEMPLAZADA POR DROPDOWN ---
+    private void setupPeriodDropdown() {
+        periods = new String[]{"Periodo 1", "Periodo 2", "Periodo 3"};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
                 requireContext(),
-                android.R.layout.simple_spinner_item,
+                android.R.layout.simple_dropdown_item_1line,
                 periods
         );
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        binding.spinnerPeriod.setAdapter(adapter);
+        binding.actPeriod.setAdapter(adapter);
+        binding.actPeriod.setText(periods[0], false); // Poner valor por defecto
 
-        binding.spinnerPeriod.setOnItemSelectedListener(
-                new android.widget.AdapterView.OnItemSelectedListener() {
-                    @Override
-                    public void onItemSelected(android.widget.AdapterView<?> parent,
-                                               View view, int position, long id) {
-                        selectedPeriod = position + 1;
-                        loadGrades();
-                    }
-
-                    @Override
-                    public void onNothingSelected(android.widget.AdapterView<?> parent) {}
-                }
-        );
+        // Cambiar el listener
+        binding.actPeriod.setOnItemClickListener((parent, view, position, id) -> {
+            selectedPeriod = position + 1;
+            loadGrades();
+        });
     }
 
     private void loadStudentData() {
@@ -86,9 +82,12 @@ public class GradeViewFragment extends Fragment {
 
         binding.progressBar.setVisibility(View.VISIBLE);
         binding.scrollView.setVisibility(View.GONE);
+        binding.tvEmpty.setVisibility(View.GONE); // Ocultar mensaje vacío al cargar
 
         viewModel.getGradeByStudentAndPeriod(studentId, selectedPeriod)
                 .observe(getViewLifecycleOwner(), resource -> {
+                    if (binding == null) return; // Vista destruida
+
                     if (resource != null) {
                         switch (resource.getStatus()) {
                             case LOADING:
@@ -98,14 +97,17 @@ public class GradeViewFragment extends Fragment {
                                 binding.progressBar.setVisibility(View.GONE);
                                 if (resource.getData() != null) {
                                     binding.scrollView.setVisibility(View.VISIBLE);
+                                    binding.tvEmpty.setVisibility(View.GONE);
                                     displayGrades(resource.getData());
                                 } else {
+                                    binding.scrollView.setVisibility(View.GONE);
                                     binding.tvEmpty.setVisibility(View.VISIBLE);
                                 }
                                 break;
 
                             case ERROR:
                                 binding.progressBar.setVisibility(View.GONE);
+                                binding.scrollView.setVisibility(View.GONE);
                                 binding.tvEmpty.setVisibility(View.VISIBLE);
                                 Toast.makeText(requireContext(), resource.getMessage(),
                                         Toast.LENGTH_SHORT).show();
@@ -130,43 +132,45 @@ public class GradeViewFragment extends Fragment {
 
     private void setAreaData(int areaIndex, Grade.AreaEvaluation evaluation) {
         String level = getLevelText(evaluation.getLevel());
-        int color = getLevelColor(evaluation.getLevel());
+        int colorRes = getLevelColor(evaluation.getLevel());
+        int color = ContextCompat.getColor(requireContext(), colorRes); // Obtener color
 
         switch (areaIndex) {
             case 0:
                 binding.tvArea1Level.setText(level);
-                binding.tvArea1Level.setTextColor(requireContext().getColor(color));
+                binding.tvArea1Level.setTextColor(color);
                 binding.tvArea1Observations.setText(evaluation.getObservations());
                 break;
             case 1:
                 binding.tvArea2Level.setText(level);
-                binding.tvArea2Level.setTextColor(requireContext().getColor(color));
+                binding.tvArea2Level.setTextColor(color);
                 binding.tvArea2Observations.setText(evaluation.getObservations());
                 break;
             case 2:
                 binding.tvArea3Level.setText(level);
-                binding.tvArea3Level.setTextColor(requireContext().getColor(color));
+                binding.tvArea3Level.setTextColor(color);
                 binding.tvArea3Observations.setText(evaluation.getObservations());
                 break;
             case 3:
                 binding.tvArea4Level.setText(level);
-                binding.tvArea4Level.setTextColor(requireContext().getColor(color));
+                binding.tvArea4Level.setTextColor(color);
                 binding.tvArea4Observations.setText(evaluation.getObservations());
                 break;
             case 4:
                 binding.tvArea5Level.setText(level);
-                binding.tvArea5Level.setTextColor(requireContext().getColor(color));
+                binding.tvArea5Level.setTextColor(color);
                 binding.tvArea5Observations.setText(evaluation.getObservations());
                 break;
             case 5:
                 binding.tvArea6Level.setText(level);
-                binding.tvArea6Level.setTextColor(requireContext().getColor(color));
+                binding.tvArea6Level.setTextColor(color);
                 binding.tvArea6Observations.setText(evaluation.getObservations());
                 break;
         }
     }
 
     private String getLevelText(String level) {
+        if (level == null) return "Sin evaluar";
         switch (level) {
             case Constants.GRADE_REQUIERE_APOYO: return "Requiere apoyo";
             case Constants.GRADE_EN_DESARROLLO: return "En desarrollo";
@@ -176,13 +180,15 @@ public class GradeViewFragment extends Fragment {
         }
     }
 
+    // --- COLORES ACTUALIZADOS A M3 ---
     private int getLevelColor(String level) {
+        if (level == null) return R.color.onSurfaceVariant;
         switch (level) {
-            case Constants.GRADE_REQUIERE_APOYO: return android.R.color.holo_red_dark;
-            case Constants.GRADE_EN_DESARROLLO: return android.R.color.holo_orange_dark;
-            case Constants.GRADE_ESPERADO: return android.R.color.holo_green_dark;
-            case Constants.GRADE_SOBRESALIENTE: return android.R.color.holo_blue_dark;
-            default: return android.R.color.darker_gray;
+            case Constants.GRADE_REQUIERE_APOYO: return R.color.error; // Rojo M3
+            case Constants.GRADE_EN_DESARROLLO: return R.color.tertiary; // Naranja M3
+            case Constants.GRADE_ESPERADO: return R.color.green_500; // Verde
+            case Constants.GRADE_SOBRESALIENTE: return R.color.primary; // Azul M3
+            default: return R.color.onSurfaceVariant; // Gris
         }
     }
 

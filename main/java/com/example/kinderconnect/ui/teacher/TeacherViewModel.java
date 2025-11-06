@@ -4,16 +4,16 @@ import android.net.Uri;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
+import android.content.Context; // <-- AÑADIDO
 import com.example.kinderconnect.data.model.*;
 import com.example.kinderconnect.data.repository.*;
 import com.example.kinderconnect.utils.Resource;
-import com.google.firebase.firestore.GeoPoint; // ¡Importante!
+import com.google.firebase.firestore.GeoPoint;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-// Importar nuevo repo
 import com.example.kinderconnect.data.repository.BusTrackingRepository;
 
 public class TeacherViewModel extends ViewModel {
@@ -22,7 +22,7 @@ public class TeacherViewModel extends ViewModel {
     private final GradeRepository gradeRepository;
     private final NoticeRepository noticeRepository;
     private final GalleryRepository galleryRepository;
-    private final BusTrackingRepository busTrackingRepository; // ¡Añadir!
+    private final BusTrackingRepository busTrackingRepository;
 
     public TeacherViewModel() {
         this.studentRepository = new StudentRepository();
@@ -30,7 +30,7 @@ public class TeacherViewModel extends ViewModel {
         this.gradeRepository = new GradeRepository();
         this.noticeRepository = new NoticeRepository();
         this.galleryRepository = new GalleryRepository();
-        this.busTrackingRepository = new BusTrackingRepository(); // ¡Inicializar!
+        this.busTrackingRepository = new BusTrackingRepository();
     }
 
     // --- Student ---
@@ -96,9 +96,10 @@ public class TeacherViewModel extends ViewModel {
         return noticeRepository.getNoticesByGroup(groupName);
     }
 
-    // --- Gallery ---
-    public LiveData<Resource<String>> uploadMedia(GalleryItem item, Uri mediaUri) {
-        return galleryRepository.uploadMedia(item, mediaUri);
+    // --- Gallery (MÉTODO MODIFICADO) ---
+    public LiveData<Resource<String>> uploadMedia(GalleryItem item, Uri mediaUri, Context context) {
+        // Pasamos el contexto al repositorio
+        return galleryRepository.uploadMedia(item, mediaUri, context.getApplicationContext());
     }
 
     public LiveData<Resource<List<GalleryItem>>> getGalleryByGroup(String groupName) {
@@ -115,7 +116,6 @@ public class TeacherViewModel extends ViewModel {
     }
 
     public LiveData<Resource<Void>> finishBusRoute() {
-        // Podrías usar "FINISHED" o "STOPPED", dependiendo de tu lógica
         return busTrackingRepository.updateBusStatus("FINISHED");
     }
 
@@ -123,11 +123,6 @@ public class TeacherViewModel extends ViewModel {
         return busTrackingRepository.getCurrentBusStatus();
     }
 
-    // --- ¡¡NUEVO MÉTODO AÑADIDO!! ---
-    /**
-     * Llama al repositorio para actualizar la ubicación del bus en Firestore.
-     * Este método no devuelve LiveData, ya que se llama desde un servicio.
-     */
     public void updateBusLocation(GeoPoint location) {
         busTrackingRepository.updateBusLocation(location);
     }

@@ -2,6 +2,7 @@
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="@dimen/margin_normal"
@@ -27,51 +28,61 @@
             android:id="@+id/tvStudentName"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Nombre del Alumno"
+            tools:text="Nombre del Alumno"
             android:textSize="@dimen/text_size_medium"
             android:textStyle="bold"
-            android:textColor="@color/text_primary"
+            android:textColor="?attr/colorOnSurface"
             android:layout_marginStart="@dimen/margin_normal"
-            android:layout_marginEnd="@dimen/margin_normal"
+            android:layout_marginEnd="@dimen/margin_small"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toEndOf="@id/ivStudentPhoto"
-            app:layout_constraintEnd_toStartOf="@id/btnPresent" />
+            app:layout_constraintEnd_toStartOf="@id/chipGroup" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnPresent"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="60dp"
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroup"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="✓"
-            android:textSize="@dimen/text_size_large"
-            android:layout_marginEnd="4dp"
+            app:singleSelection="true"
+            app:selectionRequired="true"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/btnLate" />
+            app:layout_constraintEnd_toEndOf="parent">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnLate"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="60dp"
-            android:layout_height="wrap_content"
-            android:text="R"
-            android:textSize="@dimen/text_size_large"
-            android:layout_marginEnd="4dp"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/btnAbsent" />
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipPresent"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/present"
+                app:chipBackgroundColor="@color/chip_attendance_selector"
+                app:chipStrokeColor="@color/chip_attendance_stroke_selector"
+                app:chipStrokeWidth="1dp"
+                android:textColor="@color/chip_attendance_text_selector"/>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnAbsent"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="60dp"
-            android:layout_height="wrap_content"
-            android:text="✗"
-            android:textSize="@dimen/text_size_large"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipLate"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/late"
+                app:chipBackgroundColor="@color/chip_attendance_selector"
+                app:chipStrokeColor="@color/chip_attendance_stroke_selector"
+                app:chipStrokeWidth="1dp"
+                android:textColor="@color/chip_attendance_text_selector"/>
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipAbsent"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/absent"
+                app:chipBackgroundColor="@color/chip_attendance_selector"
+                app:chipStrokeColor="@color/chip_attendance_stroke_selector"
+                app:chipStrokeWidth="1dp"
+                android:textColor="@color/chip_attendance_text_selector"/>
+
+        </com.google.android.material.chip.ChipGroup>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

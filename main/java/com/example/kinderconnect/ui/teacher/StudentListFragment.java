@@ -47,7 +47,6 @@ public class StudentListFragment extends Fragment {
         binding.recyclerView.setAdapter(adapter);
 
         adapter.setOnItemClickListener(student -> {
-            // Navegar a detalles del estudiante o registro de calificaciones
             Bundle args = new Bundle();
             args.putString("studentId", student.getStudentId());
             Navigation.findNavController(binding.getRoot())
@@ -61,36 +60,48 @@ public class StudentListFragment extends Fragment {
                         R.id.action_students_to_add_student));
     }
 
+    // --- LÓGICA DE ESTADO VACÍO MODIFICADA ---
     private void loadStudents() {
         String teacherId = preferencesManager.getUserId();
 
         binding.progressBar.setVisibility(View.VISIBLE);
+        binding.recyclerView.setVisibility(View.GONE);
+        binding.emptyView.getRoot().setVisibility(View.GONE); // Ocultar layout vacío
 
         viewModel.getStudentsByTeacher(teacherId).observe(getViewLifecycleOwner(), resource -> {
+            if (binding == null) return; // Vista destruida
             if (resource != null) {
                 switch (resource.getStatus()) {
                     case LOADING:
                         binding.progressBar.setVisibility(View.VISIBLE);
                         binding.recyclerView.setVisibility(View.GONE);
-                        binding.tvEmpty.setVisibility(View.GONE);
+                        binding.emptyView.getRoot().setVisibility(View.GONE);
                         break;
 
                     case SUCCESS:
                         binding.progressBar.setVisibility(View.GONE);
                         if (resource.getData() != null && !resource.getData().isEmpty()) {
                             binding.recyclerView.setVisibility(View.VISIBLE);
-                            binding.tvEmpty.setVisibility(View.GONE);
+                            binding.emptyView.getRoot().setVisibility(View.GONE);
                             adapter.submitList(resource.getData());
                         } else {
+                            // MOSTRAR ESTADO VACÍO
                             binding.recyclerView.setVisibility(View.GONE);
-                            binding.tvEmpty.setVisibility(View.VISIBLE);
+                            binding.emptyView.getRoot().setVisibility(View.VISIBLE);
+                            binding.emptyView.ivEmptyIcon.setImageResource(R.drawable.ic_people);
+                            binding.emptyView.tvEmptyTitle.setText("No hay alumnos");
+                            binding.emptyView.tvEmptySubtitle.setText("Presiona el botón '+' para agregar tu primer alumno.");
                         }
                         break;
 
                     case ERROR:
                         binding.progressBar.setVisibility(View.GONE);
                         binding.recyclerView.setVisibility(View.GONE);
-                        binding.tvEmpty.setVisibility(View.VISIBLE);
+                        // MOSTRAR ESTADO DE ERROR
+                        binding.emptyView.getRoot().setVisibility(View.VISIBLE);
+                        binding.emptyView.ivEmptyIcon.setImageResource(R.drawable.ic_close); // Re-usa el icono de cerrar
+                        binding.emptyView.tvEmptyTitle.setText("Error");
+                        binding.emptyView.tvEmptySubtitle.setText(resource.getMessage());
                         Toast.makeText(requireContext(), resource.getMessage(),
                                 Toast.LENGTH_SHORT).show();
                         break;

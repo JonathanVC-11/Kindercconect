@@ -5,13 +5,13 @@ import androidx.lifecycle.MutableLiveData;
 import com.example.kinderconnect.data.model.BusStatus;
 import com.example.kinderconnect.utils.Resource;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.GeoPoint; // Asegúrate que esté importado
 
 public class BusRepository {
     private final FirebaseFirestore firestore;
 
-    // --- ¡¡LÍNEAS CORREGIDAS AQUÍ!! ---
-    private static final String COLLECTION_BUS = "bus_tracking"; // Antes era "bus"
-    private static final String DOCUMENT_ROUTE = "current_status"; // Antes era "route"
+    private static final String COLLECTION_BUS = "bus_tracking";
+    private static final String DOCUMENT_ROUTE = "current_status";
 
     public BusRepository() {
         this.firestore = FirebaseFirestore.getInstance();
@@ -33,8 +33,15 @@ public class BusRepository {
                         BusStatus busStatus = snapshot.toObject(BusStatus.class);
                         result.setValue(Resource.success(busStatus));
                     } else {
-                        // Este es el error que veías. Ahora buscará en el lugar correcto.
-                        result.setValue(Resource.error("No se encontró estado del bus", null));
+                        // --- MODIFICACIÓN AQUÍ ---
+                        // Antes: resource.error("No se encontró estado del bus", null)
+                        // Ahora: Devolvemos un estado "STOPPED" por defecto si no existe el doc.
+                        BusStatus defaultStatus = new BusStatus();
+                        defaultStatus.setStatus("STOPPED");
+                        // Opcional: ponerlo en el inicio de la ruta
+                        // defaultStatus.setCurrentLocation(new GeoPoint(19.4326, -99.1332));
+                        result.setValue(Resource.success(defaultStatus));
+                        // -------------------------
                     }
                 });
 

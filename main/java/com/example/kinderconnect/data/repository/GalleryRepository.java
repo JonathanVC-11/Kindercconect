@@ -1,7 +1,9 @@
 package com.example.kinderconnect.data.repository;
 
+import android.content.Context;
+import android.graphics.Bitmap;
 import android.net.Uri;
-import android.util.Log; // ¡Importante añadir Log!
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.lifecycle.LiveData;
@@ -12,22 +14,69 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.example.kinderconnect.data.model.GalleryItem;
 import com.example.kinderconnect.utils.Constants;
+import com.example.kinderconnect.utils.ImageUtils;
 import com.example.kinderconnect.utils.Resource;
-import java.util.ArrayList; // ¡Importante para listas vacías!
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID; // ¡Importante para nombre único!
+import java.util.UUID;
 
 public class GalleryRepository {
     private final FirebaseFirestore firestore;
     private final FirebaseStorage storage;
-    private static final String TAG = "GalleryRepository"; // Tag para Logs
+    private static final String TAG = "GalleryRepository";
 
     public GalleryRepository() {
         this.firestore = FirebaseFirestore.getInstance();
         this.storage = FirebaseStorage.getInstance();
     }
 
-    public LiveData<Resource<String>> uploadMedia(GalleryItem galleryItem, Uri mediaUri) {
+    // --- NUEVO MÉTODO AÑADIDO ---
+    /**
+     * Sube una foto de perfil, la comprime y devuelve la URL de descarga.
+     */
+    public LiveData<Resource<String>> uploadProfilePicture(Context context, String userId, Uri imageUri) {
+        MutableLiveData<Resource<String>> result = new MutableLiveData<>();
+        result.setValue(Resource.loading(null));
+
+        try {
+            // 1. Comprimir la imagen
+            Bitmap bitmap = ImageUtils.getBitmapFromUri(context, imageUri);
+            Bitmap compressedBitmap = ImageUtils.compressBitmap(bitmap, 400, 400); // 400x400 para perfil
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            compressedBitmap.compress(Bitmap.CompressFormat.JPEG, 85, baos);
+            byte[] data = baos.toByteArray();
+
+            // 2. Crear ruta de subida
+            String fileName = Constants.STORAGE_PROFILES + userId + ".jpg"; // Sobrescribe la anterior
+            StorageReference profileRef = storage.getReference().child(fileName);
+
+            // 3. Subir
+            profileRef.putBytes(data)
+                    .addOnSuccessListener(taskSnapshot -> {
+                        // 4. Obtener URL de descarga
+                        profileRef.getDownloadUrl().addOnSuccessListener(uri -> {
+                            result.setValue(Resource.success(uri.toString()));
+                        }).addOnFailureListener(e -> {
+                            result.setValue(Resource.error("No se pudo obtener URL: " + e.getMessage(), null));
+                        });
+                    })
+                    .addOnFailureListener(e -> {
+                        result.setValue(Resource.error("No se pudo subir la foto: " + e.getMessage(), null));
+                    });
+
+        } catch (IOException e) {
+            result.setValue(Resource.error("Error al procesar la imagen: " + e.getMessage(), null));
+        }
+
+        return result;
+    }
+    // ----------------------------
+
+    public LiveData<Resource<String>> uploadMedia(GalleryItem galleryItem, Uri mediaUri, Context context) {
         MutableLiveData<Resource<String>> result = new MutableLiveData<>();
         result.setValue(Resource.loading(null));
 
@@ -37,32 +86,34 @@ public class GalleryRepository {
             return result;
         }
 
-        // Generar un nombre de archivo único
         String extension = galleryItem.getMediaType().equals(Constants.MEDIA_IMAGE) ? ".jpg" : ".mp4";
         String uniqueFileName = UUID.randomUUID().toString() + extension;
         String storagePath = Constants.STORAGE_GALLERY + uniqueFileName;
-        StorageReference mediaRef = storage.getReference().child(storagePath);
+        StorageReference originalMediaRef = storage.getReference().child(storagePath);
 
         Log.d(TAG, "Iniciando subida a Storage: " + storagePath);
 
-        // 1. Subir el archivo
-        mediaRef.putFile(mediaUri)
+        originalMediaRef.putFile(mediaUri)
                 .addOnProgressListener(snapshot -> {
-                    // Opcional: Calcular y mostrar progreso
                     double progress = (100.0 * snapshot.getBytesTransferred()) / snapshot.getTotalByteCount();
                     Log.d(TAG, "Progreso de subida: " + String.format("%.2f", progress) + "%");
                 })
                 .addOnSuccessListener(taskSnapshot -> {
-                    Log.d(TAG, "Archivo subido exitosamente a Storage.");
-                    // 2. Obtener la URL de descarga
-                    mediaRef.getDownloadUrl()
+                    Log.d(TAG, "Archivo original subido exitosamente a Storage.");
+                    originalMediaRef.getDownloadUrl()
                             .addOnSuccessListener(downloadUri -> {
-                                Log.d(TAG, "URL de descarga obtenida: " + downloadUri.toString());
-                                // 3. Asignar URLs y guardar en Firestore
+                                Log.d(TAG, "URL de descarga (original) obtenida: " + downloadUri.toString());
+
                                 galleryItem.setMediaUrl(downloadUri.toString());
-                                // Simplificación: usar la misma URL como thumbnail.
-                                galleryItem.setThumbnailUrl(downloadUri.toString());
-                                saveGalleryItemToFirestore(galleryItem, result);
+
+                                if (galleryItem.getMediaType().equals(Constants.MEDIA_IMAGE)) {
+                                    Log.d(TAG, "Es imagen, iniciando subida de thumbnail...");
+                                    uploadThumbnail(context, mediaUri, galleryItem, result);
+                                } else {
+                                    Log.d(TAG, "Es video, guardando en Firestore sin thumbnail.");
+                                    galleryItem.setThumbnailUrl(null);
+                                    saveGalleryItemToFirestore(galleryItem, result);
+                                }
                             })
                             .addOnFailureListener(e -> {
                                 Log.e(TAG, "Error al obtener URL de descarga", e);
@@ -76,6 +127,42 @@ public class GalleryRepository {
 
         return result;
     }
+
+    private void uploadThumbnail(Context context, Uri originalImageUri, GalleryItem galleryItem, MutableLiveData<Resource<String>> result) {
+        try {
+            Bitmap bitmap = ImageUtils.getBitmapFromUri(context, originalImageUri);
+            Bitmap compressedBitmap = ImageUtils.compressBitmap(bitmap, 400, 400);
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            compressedBitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
+            byte[] data = baos.toByteArray();
+
+            String thumbFileName = "thumb_" + UUID.randomUUID().toString() + ".jpg";
+            StorageReference thumbRef = storage.getReference().child(Constants.STORAGE_GALLERY + thumbFileName);
+
+            Log.d(TAG, "Subiendo thumbnail: " + thumbFileName);
+            thumbRef.putBytes(data)
+                    .addOnSuccessListener(taskSnapshot -> {
+                        thumbRef.getDownloadUrl().addOnSuccessListener(thumbUri -> {
+                            Log.d(TAG, "Thumbnail subido, URL: " + thumbUri.toString());
+                            galleryItem.setThumbnailUrl(thumbUri.toString());
+                            saveGalleryItemToFirestore(galleryItem, result);
+                        }).addOnFailureListener(e -> {
+                            Log.e(TAG, "Error al obtener URL del thumbnail", e);
+                            result.setValue(Resource.error("Error al subir thumbnail: " + e.getMessage(), null));
+                        });
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Error al subir bytes del thumbnail", e);
+                        result.setValue(Resource.error("Error al subir thumbnail: " + e.getMessage(), null));
+                    });
+
+        } catch (IOException e) {
+            Log.e(TAG, "Error al crear bitmap para thumbnail", e);
+            result.setValue(Resource.error("Error al procesar imagen: " + e.getMessage(), null));
+        }
+    }
+
 
     private void saveGalleryItemToFirestore(GalleryItem galleryItem,
                                             MutableLiveData<Resource<String>> result) {
@@ -112,7 +199,7 @@ public class GalleryRepository {
                         result.setValue(Resource.success(items));
                     } else {
                         Log.d(TAG, "Snapshot nulo al obtener galería por grupo. Devolviendo lista vacía.");
-                        result.setValue(Resource.success(new ArrayList<>())); // Lista vacía si no hay valor
+                        result.setValue(Resource.success(new ArrayList<>()));
                     }
                 });
 
@@ -124,7 +211,6 @@ public class GalleryRepository {
         result.setValue(Resource.loading(null));
 
         firestore.collection(Constants.COLLECTION_GALLERY)
-                // Asegúrate de que este campo exista o la query fallará silenciosamente
                 .whereArrayContains("taggedStudents", studentId)
                 .orderBy("uploadedAt", Query.Direction.DESCENDING)
                 .addSnapshotListener((value, error) -> {
@@ -140,7 +226,7 @@ public class GalleryRepository {
                         result.setValue(Resource.success(items));
                     } else {
                         Log.d(TAG, "Snapshot nulo al obtener galería por alumno. Devolviendo lista vacía.");
-                        result.setValue(Resource.success(new ArrayList<>())); // Lista vacía
+                        result.setValue(Resource.success(new ArrayList<>()));
                     }
                 });
 
@@ -151,40 +237,46 @@ public class GalleryRepository {
         MutableLiveData<Resource<Void>> result = new MutableLiveData<>();
         result.setValue(Resource.loading(null));
 
-        // 1. Obtener documento para borrar de Storage (si tiene URL)
         firestore.collection(Constants.COLLECTION_GALLERY).document(itemId).get()
                 .addOnSuccessListener(documentSnapshot -> {
                     String mediaUrlToDelete = null;
+                    String thumbUrlToDelete = null;
+
                     if (documentSnapshot.exists()) {
                         GalleryItem item = documentSnapshot.toObject(GalleryItem.class);
-                        if (item != null && item.getMediaUrl() != null && !item.getMediaUrl().isEmpty()) {
-                            mediaUrlToDelete = item.getMediaUrl();
+                        if (item != null) {
+                            if (item.getMediaUrl() != null && !item.getMediaUrl().isEmpty()) {
+                                mediaUrlToDelete = item.getMediaUrl();
+                            }
+                            if (item.getThumbnailUrl() != null && !item.getThumbnailUrl().isEmpty()) {
+                                thumbUrlToDelete = item.getThumbnailUrl();
+                            }
                         }
                     }
 
-                    // 2. Borrar documento de Firestore
-                    deleteGalleryDocument(itemId, result, mediaUrlToDelete); // Pasar URL a borrar
+                    deleteGalleryDocument(itemId, result, mediaUrlToDelete, thumbUrlToDelete);
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Error al obtener item antes de borrar, borrando solo Firestore.", e);
-                    deleteGalleryDocument(itemId, result, null); // Intentar borrar Firestore de todos modos
+                    deleteGalleryDocument(itemId, result, null, null);
                 });
 
         return result;
     }
 
-    // Método auxiliar para borrar de Firestore y luego (si hay URL) de Storage
-    private void deleteGalleryDocument(String itemId, MutableLiveData<Resource<Void>> result, @Nullable String mediaUrl) {
+    private void deleteGalleryDocument(String itemId, MutableLiveData<Resource<Void>> result, @Nullable String mediaUrl, @Nullable String thumbUrl) {
         firestore.collection(Constants.COLLECTION_GALLERY)
                 .document(itemId)
                 .delete()
                 .addOnSuccessListener(aVoid -> {
                     Log.d(TAG, "Documento de Firestore eliminado: " + itemId);
-                    // 3. Si se borró de Firestore y había URL, borrar de Storage
                     if (mediaUrl != null) {
                         deleteFromStorage(mediaUrl);
                     }
-                    result.setValue(Resource.success(null)); // Éxito (Firestore borrado)
+                    if (thumbUrl != null) {
+                        deleteFromStorage(thumbUrl);
+                    }
+                    result.setValue(Resource.success(null));
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Error al eliminar documento de Firestore", e);
@@ -192,7 +284,6 @@ public class GalleryRepository {
                 });
     }
 
-    // Método auxiliar para borrar de Storage
     private void deleteFromStorage(String mediaUrl) {
         try {
             StorageReference fileRef = storage.getReferenceFromUrl(mediaUrl);

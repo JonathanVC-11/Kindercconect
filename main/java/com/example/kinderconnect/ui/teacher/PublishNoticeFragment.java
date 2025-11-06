@@ -20,9 +20,8 @@ import com.example.kinderconnect.databinding.FragmentPublishNoticeBinding;
 import com.example.kinderconnect.data.local.PreferencesManager;
 import com.example.kinderconnect.data.model.Notice;
 import com.example.kinderconnect.utils.Constants;
-import com.example.kinderconnect.utils.Resource; // <-- AÑADIDO
+import com.example.kinderconnect.utils.Resource;
 import java.util.Calendar;
-import java.util.Date;
 
 public class PublishNoticeFragment extends Fragment {
     private FragmentPublishNoticeBinding binding;
@@ -30,9 +29,11 @@ public class PublishNoticeFragment extends Fragment {
     private PreferencesManager preferencesManager;
     private Uri selectedImageUri;
     private ActivityResultLauncher<Intent> imagePickerLauncher;
-
-    // --- AÑADIR VARIABLE ---
     private String teacherGroupName = null;
+
+    // --- AÑADIDO: Arrays para los menús ---
+    private String[] categories;
+    private String[] scopes;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -66,11 +67,9 @@ public class PublishNoticeFragment extends Fragment {
         preferencesManager = new PreferencesManager(requireContext());
 
         setupToolbar();
-        setupSpinners();
+        setupDropdowns(); // --- MÉTODO RENOMBRADO ---
         setupListeners();
 
-        // --- MODIFICADO ---
-        // Deshabilitar el botón hasta que sepamos el grupo
         binding.btnPublish.setEnabled(false);
         loadTeacherGroup();
     }
@@ -80,26 +79,27 @@ public class PublishNoticeFragment extends Fragment {
                 Navigation.findNavController(v).navigateUp());
     }
 
-    private void setupSpinners() {
-        // Category spinner
-        String[] categories = {"Tarea", "Evento", "Recordatorio", "Urgente"};
+    // --- LÓGICA DE SPINNER REEMPLAZADA POR DROPDOWN ---
+    private void setupDropdowns() {
+        // Category dropdown
+        categories = new String[]{"Tarea", "Evento", "Recordatorio", "Urgente"};
         ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(
                 requireContext(),
-                android.R.layout.simple_spinner_item,
+                android.R.layout.simple_dropdown_item_1line, // Usar layout de dropdown
                 categories
         );
-        categoryAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        binding.spinnerCategory.setAdapter(categoryAdapter);
+        binding.actCategory.setAdapter(categoryAdapter);
+        binding.actCategory.setText(categories[0], false); // Poner valor por defecto
 
-        // Scope spinner
-        String[] scopes = {"Mi grupo", "Toda la escuela"};
+        // Scope dropdown
+        scopes = new String[]{"Mi grupo", "Toda la escuela"};
         ArrayAdapter<String> scopeAdapter = new ArrayAdapter<>(
                 requireContext(),
-                android.R.layout.simple_spinner_item,
+                android.R.layout.simple_dropdown_item_1line,
                 scopes
         );
-        scopeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        binding.spinnerScope.setAdapter(scopeAdapter);
+        binding.actScope.setAdapter(scopeAdapter);
+        binding.actScope.setText(scopes[0], false); // Poner valor por defecto
     }
 
     private void setupListeners() {
@@ -107,7 +107,6 @@ public class PublishNoticeFragment extends Fragment {
         binding.btnPublish.setOnClickListener(v -> publishNotice());
     }
 
-    // --- NUEVO MÉTODO AÑADIDO ---
     private void loadTeacherGroup() {
         String teacherId = preferencesManager.getUserId();
         if (teacherId == null) {
@@ -117,17 +116,14 @@ public class PublishNoticeFragment extends Fragment {
 
         viewModel.getStudentsByTeacher(teacherId).observe(getViewLifecycleOwner(), resource -> {
             if (resource.getStatus() == Resource.Status.SUCCESS && resource.getData() != null && !resource.getData().isEmpty()) {
-                // Asumimos que la maestra solo tiene un grupo.
-                // Obtenemos el nombre del grupo del primer estudiante.
                 teacherGroupName = resource.getData().get(0).getGroupName();
-                binding.btnPublish.setEnabled(true); // Habilitar botón
+                binding.btnPublish.setEnabled(true);
             } else if (resource.getStatus() == Resource.Status.SUCCESS) {
-                // La maestra no tiene alumnos, pero aún puede publicar en "Toda la escuela"
                 teacherGroupName = null;
-                binding.btnPublish.setEnabled(true); // Habilitar botón
+                binding.btnPublish.setEnabled(true);
             } else if (resource.getStatus() == Resource.Status.ERROR) {
                 Toast.makeText(requireContext(), "Error al cargar datos del grupo", Toast.LENGTH_SHORT).show();
-                binding.btnPublish.setEnabled(true); // Habilitar de todos modos
+                binding.btnPublish.setEnabled(true);
             }
         });
     }
@@ -138,6 +134,7 @@ public class PublishNoticeFragment extends Fragment {
         imagePickerLauncher.launch(intent);
     }
 
+    // --- LÓGICA DE PUBLICACIÓN MODIFICADA ---
     private void publishNotice() {
         String title = binding.etTitle.getText().toString().trim();
         String description = binding.etDescription.getText().toString().trim();
@@ -157,27 +154,25 @@ public class PublishNoticeFragment extends Fragment {
         String teacherId = preferencesManager.getUserId();
         String teacherName = preferencesManager.getUserName();
 
-        String category = getCategoryConstant(binding.spinnerCategory.getSelectedItemPosition());
-        String scope = binding.spinnerScope.getSelectedItemPosition() == 0 ?
+        // Obtener valores desde el texto del AutoCompleteTextView
+        String categoryString = binding.actCategory.getText().toString();
+        String scopeString = binding.actScope.getText().toString();
+
+        String category = getCategoryConstant(categoryString);
+        String scope = scopeString.equals(scopes[0]) ? // Comparar con el array
                 Constants.SCOPE_GROUP : Constants.SCOPE_SCHOOL;
 
         Notice notice = new Notice(teacherId, title, description, category, scope);
         notice.setTeacherName(teacherName);
 
-
-        // --- CORRECCIÓN DE LÓGICA DE GRUPO ---
         if (scope.equals(Constants.SCOPE_GROUP)) {
-            // Validar que la maestra tenga un grupo
             if (teacherGroupName == null || teacherGroupName.isEmpty()) {
                 Toast.makeText(requireContext(), "No tienes un grupo asignado para publicar", Toast.LENGTH_SHORT).show();
                 return;
             }
-            // Asignar el grupo real de la maestra
-            notice.setGroupName(teacherGroupName); // <-- CORREGIDO
+            notice.setGroupName(teacherGroupName);
         }
-        // Si el scope es "SCHOOL", no establecemos groupName (se queda null).
 
-        // Fecha de vigencia (7 días por defecto)
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.DAY_OF_YEAR, 7);
         notice.setValidUntil(calendar.getTime());
@@ -190,7 +185,6 @@ public class PublishNoticeFragment extends Fragment {
                 switch (resource.getStatus()) {
                     case LOADING:
                         break;
-
                     case SUCCESS:
                         binding.progressBar.setVisibility(View.GONE);
                         Toast.makeText(requireContext(),
@@ -198,7 +192,6 @@ public class PublishNoticeFragment extends Fragment {
                                 Toast.LENGTH_SHORT).show();
                         Navigation.findNavController(binding.getRoot()).navigateUp();
                         break;
-
                     case ERROR:
                         binding.progressBar.setVisibility(View.GONE);
                         binding.btnPublish.setEnabled(true);
@@ -210,14 +203,18 @@ public class PublishNoticeFragment extends Fragment {
         });
     }
 
-    private String getCategoryConstant(int position) {
-        switch (position) {
-            case 0: return Constants.NOTICE_TAREA;
-            case 1: return Constants.NOTICE_EVENTO;
-            case 2: return Constants.NOTICE_RECORDATORIO;
-            case 3: return Constants.NOTICE_URGENTE;
-            default: return Constants.NOTICE_RECORDATORIO;
+    // --- LÓGICA DE CATEGORÍA MODIFICADA (acepta String) ---
+    private String getCategoryConstant(String categoryText) {
+        if (categoryText.equals(categories[0])) { // Tarea
+            return Constants.NOTICE_TAREA;
+        } else if (categoryText.equals(categories[1])) { // Evento
+            return Constants.NOTICE_EVENTO;
+        } else if (categoryText.equals(categories[2])) { // Recordatorio
+            return Constants.NOTICE_RECORDATORIO;
+        } else if (categoryText.equals(categories[3])) { // Urgente
+            return Constants.NOTICE_URGENTE;
         }
+        return Constants.NOTICE_RECORDATORIO; // Default
     }
 
     @Override

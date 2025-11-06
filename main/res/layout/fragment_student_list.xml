@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_light">
+    android:background="?attr/colorSurface">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -15,9 +15,9 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@color/purple_500"
+            android:background="?attr/colorPrimary"
             app:title="Mis Alumnos"
-            app:titleTextColor="@color/white" />
+            app:titleTextColor="?attr/colorOnPrimary" />
 
         <FrameLayout
             android:layout_width="match_parent"
@@ -30,13 +30,11 @@
                 android:padding="@dimen/padding_normal"
                 android:clipToPadding="false" />
 
-            <TextView
-                android:id="@+id/tvEmpty"
+            <include
+                android:id="@+id/emptyView"
+                layout="@layout/layout_empty_state"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="No hay alumnos registrados"
-                android:textSize="@dimen/text_size_large"
-                android:textColor="@color/text_secondary"
                 android:layout_gravity="center"
                 android:visibility="gone" />
 
@@ -55,8 +53,9 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/margin_normal"
-        android:src="@android:drawable/ic_input_add"
+        android:src="@drawable/ic_add"
         android:contentDescription="@string/add_student"
-        app:tint="@color/white" />
+        app:tint="?attr/colorOnPrimaryContainer"
+        app:backgroundTint="?attr/colorPrimaryContainer" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

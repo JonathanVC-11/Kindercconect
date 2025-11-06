@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    android:background="@color/background_light">
+    android:background="?attr/colorSurface">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -28,7 +28,7 @@
             android:layout_height="wrap_content"
             android:text="@string/app_name"
             android:textSize="@dimen/text_size_title"
-            android:textColor="@color/purple_700"
+            android:textColor="?attr/colorPrimary"
             android:textStyle="bold"
             android:layout_marginTop="@dimen/margin_normal"
             app:layout_constraintTop_toBottomOf="@id/ivLogo"
@@ -41,7 +41,7 @@
             android:layout_height="wrap_content"
             android:text="@string/slogan"
             android:textSize="@dimen/text_size_normal"
-            android:textColor="@color/text_secondary"
+            android:textColor="?attr/colorSecondary"
             android:textAlignment="center"
             android:layout_marginTop="@dimen/margin_small"
             app:layout_constraintTop_toBottomOf="@id/tvAppName"
@@ -56,8 +56,8 @@
             app:layout_constraintTop_toBottomOf="@id/tvSlogan"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:startIconDrawable="@android:drawable/ic_dialog_email"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+            app:startIconDrawable="@drawable/ic_email"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etEmail"
@@ -75,9 +75,9 @@
             app:layout_constraintTop_toBottomOf="@id/tilEmail"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:startIconDrawable="@android:drawable/ic_lock_idle_lock"
+            app:startIconDrawable="@drawable/ic_lock"
             app:endIconMode="password_toggle"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etPassword"
@@ -92,7 +92,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/forgot_password"
-            android:textColor="@color/purple_500"
+            android:textColor="?attr/colorPrimary"
             android:textSize="@dimen/text_size_normal"
             android:layout_marginTop="@dimen/margin_normal"
             app:layout_constraintTop_toBottomOf="@id/tilPassword"
@@ -136,7 +136,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/register"
-            android:textColor="@color/purple_500"
+            android:textColor="?attr/colorPrimary"
             android:textStyle="bold"
             android:textSize="@dimen/text_size_normal"
             android:layout_marginStart="4dp"

@@ -13,6 +13,7 @@ import com.example.kinderconnect.ui.teacher.TeacherMainActivity;
 import com.example.kinderconnect.utils.Constants;
 import com.example.kinderconnect.utils.Resource;
 import com.example.kinderconnect.utils.ValidationUtils;
+import com.example.kinderconnect.data.model.User; // <-- AÑADIDO
 
 public class LoginActivity extends AppCompatActivity {
     private ActivityLoginBinding binding;
@@ -47,7 +48,6 @@ public class LoginActivity extends AppCompatActivity {
         String email = binding.etEmail.getText().toString().trim();
         String password = binding.etPassword.getText().toString().trim();
 
-        // Validar campos
         if (!ValidationUtils.isValidEmail(email)) {
             binding.tilEmail.setError("Ingresa un correo válido");
             return;
@@ -60,25 +60,20 @@ public class LoginActivity extends AppCompatActivity {
         }
         binding.tilPassword.setError(null);
 
-        // Mostrar loading
         binding.progressBar.setVisibility(View.VISIBLE);
         binding.btnLogin.setEnabled(false);
 
-        // Realizar login
         authViewModel.login(email, password).observe(this, resource -> {
             if (resource != null) {
                 switch (resource.getStatus()) {
                     case LOADING:
-                        // Ya está mostrando el progress
                         break;
-
                     case SUCCESS:
                         if (resource.getData() != null) {
                             String uid = resource.getData().getUid();
                             loadUserData(uid);
                         }
                         break;
-
                     case ERROR:
                         binding.progressBar.setVisibility(View.GONE);
                         binding.btnLogin.setEnabled(true);
@@ -93,13 +88,15 @@ public class LoginActivity extends AppCompatActivity {
         authViewModel.getUserData(uid).observe(this, resource -> {
             if (resource != null) {
                 switch (resource.getStatus()) {
+                    case LOADING: // Añadido para que el usuario sepa que está cargando
+                        binding.progressBar.setVisibility(View.VISIBLE);
+                        break;
                     case SUCCESS:
                         if (resource.getData() != null) {
                             saveUserSession(resource.getData());
                             navigateToMainScreen(resource.getData().getUserType());
                         }
                         break;
-
                     case ERROR:
                         binding.progressBar.setVisibility(View.GONE);
                         binding.btnLogin.setEnabled(true);
@@ -111,12 +108,14 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
-    private void saveUserSession(com.example.kinderconnect.data.model.User user) {
+    // --- MÉTODO MODIFICADO ---
+    private void saveUserSession(User user) {
         preferencesManager.setLoggedIn(true);
         preferencesManager.saveUserId(user.getUid());
         preferencesManager.saveUserType(user.getUserType());
         preferencesManager.saveUserName(user.getFullName());
         preferencesManager.saveUserEmail(user.getEmail());
+        preferencesManager.saveUserPhoto(user.getPhotoUrl()); // <-- AÑADIDO
     }
 
     private void navigateToMainScreen(String userType) {
@@ -126,6 +125,7 @@ public class LoginActivity extends AppCompatActivity {
         } else {
             intent = new Intent(this, ParentMainActivity.class);
         }
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK); // Evita volver
         startActivity(intent);
         finish();
     }

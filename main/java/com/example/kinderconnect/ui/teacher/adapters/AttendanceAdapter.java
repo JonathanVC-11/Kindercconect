@@ -55,28 +55,6 @@ public class AttendanceAdapter extends ListAdapter<Student, AttendanceAdapter.At
         AttendanceViewHolder(ItemAttendanceBinding binding) {
             super(binding.getRoot());
             this.binding = binding;
-
-            setupListeners();
-        }
-
-        private void setupListeners() {
-            binding.btnPresent.setOnClickListener(v -> {
-                if (currentStudent != null) {
-                    updateStatus(Constants.ATTENDANCE_PRESENT);
-                }
-            });
-
-            binding.btnLate.setOnClickListener(v -> {
-                if (currentStudent != null) {
-                    updateStatus(Constants.ATTENDANCE_LATE);
-                }
-            });
-
-            binding.btnAbsent.setOnClickListener(v -> {
-                if (currentStudent != null) {
-                    updateStatus(Constants.ATTENDANCE_ABSENT);
-                }
-            });
         }
 
         void bind(Student student) {
@@ -91,43 +69,55 @@ public class AttendanceAdapter extends ListAdapter<Student, AttendanceAdapter.At
                         .into(binding.ivStudentPhoto);
             }
 
+            // --- LÓGICA DE LISTENERS MODIFICADA ---
+            // Quitar listeners antiguos para evitar llamadas duplicadas
+            binding.chipGroup.setOnCheckedStateChangeListener(null);
+
             // Restaurar estado
             String status = attendanceMap.get(student.getStudentId());
-            updateButtonState(status);
+            updateChipState(status);
+
+            // Añadir nuevo listener
+            binding.chipGroup.setOnCheckedStateChangeListener((group, checkedIds) -> {
+                if (checkedIds.isEmpty()) return; // No hacer nada si se deselecciona
+
+                int checkedId = checkedIds.get(0); // Es singleSelection
+                String newStatus;
+                if (checkedId == R.id.chipPresent) {
+                    newStatus = Constants.ATTENDANCE_PRESENT;
+                } else if (checkedId == R.id.chipLate) {
+                    newStatus = Constants.ATTENDANCE_LATE;
+                } else if (checkedId == R.id.chipAbsent) {
+                    newStatus = Constants.ATTENDANCE_ABSENT;
+                } else {
+                    return;
+                }
+
+                attendanceMap.put(currentStudent.getStudentId(), newStatus);
+                if (listener != null) {
+                    listener.onStatusChange(currentStudent.getStudentId(), newStatus);
+                }
+            });
         }
 
-        private void updateStatus(String status) {
-            attendanceMap.put(currentStudent.getStudentId(), status);
-            updateButtonState(status);
+        // --- LÓGICA DE UI MODIFICADA ---
+        private void updateChipState(String status) {
+            // Desmarcar todos primero
+            binding.chipPresent.setChecked(false);
+            binding.chipLate.setChecked(false);
+            binding.chipAbsent.setChecked(false);
 
-            if (listener != null) {
-                listener.onStatusChange(currentStudent.getStudentId(), status);
-            }
-        }
-
-        private void updateButtonState(String status) {
-            // Reset all buttons
-            binding.btnPresent.setBackgroundTintList(
-                    binding.getRoot().getContext().getColorStateList(R.color.divider));
-            binding.btnLate.setBackgroundTintList(
-                    binding.getRoot().getContext().getColorStateList(R.color.divider));
-            binding.btnAbsent.setBackgroundTintList(
-                    binding.getRoot().getContext().getColorStateList(R.color.divider));
-
-            // Highlight selected
+            // Marcar el correcto
             if (status != null) {
                 switch (status) {
                     case Constants.ATTENDANCE_PRESENT:
-                        binding.btnPresent.setBackgroundTintList(
-                                binding.getRoot().getContext().getColorStateList(R.color.attendance_present));
+                        binding.chipPresent.setChecked(true);
                         break;
                     case Constants.ATTENDANCE_LATE:
-                        binding.btnLate.setBackgroundTintList(
-                                binding.getRoot().getContext().getColorStateList(R.color.attendance_late));
+                        binding.chipLate.setChecked(true);
                         break;
                     case Constants.ATTENDANCE_ABSENT:
-                        binding.btnAbsent.setBackgroundTintList(
-                                binding.getRoot().getContext().getColorStateList(R.color.attendance_absent));
+                        binding.chipAbsent.setChecked(true);
                         break;
                 }
             }

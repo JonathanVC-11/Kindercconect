@@ -1,6 +1,7 @@
 package com.example.kinderconnect.ui.adapters;
 
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DiffUtil;
@@ -11,6 +12,7 @@ import com.example.kinderconnect.R;
 import com.example.kinderconnect.databinding.ItemGalleryBinding;
 import com.example.kinderconnect.data.model.GalleryItem;
 import com.example.kinderconnect.utils.Constants;
+import com.example.kinderconnect.utils.DateUtils; // <-- AÑADIDO
 
 public class GalleryAdapter extends ListAdapter<GalleryItem, GalleryAdapter.GalleryViewHolder> {
     private OnItemClickListener listener;
@@ -29,7 +31,11 @@ public class GalleryAdapter extends ListAdapter<GalleryItem, GalleryAdapter.Gall
 
                 @Override
                 public boolean areContentsTheSame(@NonNull GalleryItem oldItem, @NonNull GalleryItem newItem) {
-                    return oldItem.getMediaUrl().equals(newItem.getMediaUrl());
+                    // Comprobar ambas URLs y la fecha
+                    boolean urlsMatch = oldItem.getMediaUrl().equals(newItem.getMediaUrl()) &&
+                            (oldItem.getThumbnailUrl() == null ? newItem.getThumbnailUrl() == null : oldItem.getThumbnailUrl().equals(newItem.getThumbnailUrl()));
+                    boolean datesMatch = (oldItem.getUploadedAt() == null ? newItem.getUploadedAt() == null : oldItem.getUploadedAt().equals(newItem.getUploadedAt()));
+                    return urlsMatch && datesMatch;
                 }
             };
 
@@ -70,30 +76,46 @@ public class GalleryAdapter extends ListAdapter<GalleryItem, GalleryAdapter.Gall
             });
         }
 
-        // --- ¡¡BLOQUE MODIFICADO AQUÍ!! ---
+        // --- ¡¡LÓGICA 'BIND' MODIFICADA!! ---
         void bind(GalleryItem item) {
-            if (item.getMediaType().equals(Constants.MEDIA_VIDEO)) {
-                // Es un VIDEO
-                binding.ivPlayIcon.setVisibility(android.view.View.VISIBLE);
 
-                // Cargar un placeholder (logo) porque Glide no puede cargar un video .mp4
+            // Condición 1: Es un video
+            boolean isVideo = item.getMediaType().equals(Constants.MEDIA_VIDEO);
+            // Condición 2: El thumbnail no existe o está vacío
+            boolean noThumbnail = item.getThumbnailUrl() == null || item.getThumbnailUrl().isEmpty();
+
+            if (isVideo || noThumbnail) {
+                // Es un VIDEO o es una IMAGEN SIN THUMBNAIL
+                binding.ivPlayIcon.setVisibility(isVideo ? android.view.View.VISIBLE : android.view.View.GONE);
+
+                // Cargar un placeholder
                 Glide.with(binding.getRoot().getContext())
-                        .load(R.drawable.ic_logo) // Carga el logo como thumbnail
+                        .load(R.drawable.ic_logo)
                         .placeholder(R.drawable.ic_logo)
                         .centerCrop()
                         .into(binding.ivThumbnail);
 
             } else {
-                // Es una IMAGEN
+                // Es una IMAGEN y SÍ tiene un thumbnail
                 binding.ivPlayIcon.setVisibility(android.view.View.GONE);
 
-                // Cargar la imagen normalmente
+                // Cargar la miniatura comprimida (thumbnailUrl)
                 Glide.with(binding.getRoot().getContext())
-                        .load(item.getThumbnailUrl()) // Usa el thumbnail
+                        .load(item.getThumbnailUrl())
                         .placeholder(R.drawable.ic_logo)
                         .centerCrop()
                         .into(binding.ivThumbnail);
             }
+
+            // --- AÑADIDO: Lógica para la fecha ---
+            if (item.getUploadedAt() != null) {
+                // Usamos el método de tiempo relativo que ya tienes en DateUtils
+                binding.tvDate.setText(DateUtils.getRelativeTimeString(item.getUploadedAt()));
+                binding.tvDate.setVisibility(View.VISIBLE);
+            } else {
+                binding.tvDate.setVisibility(View.GONE);
+            }
+            // ------------------------------------
         }
     }
 

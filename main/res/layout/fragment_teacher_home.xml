@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_light"
+    android:background="?attr/colorSurface"
     android:fillViewport="true">
 
     <LinearLayout
@@ -19,7 +19,7 @@
             android:text="@string/hello_teacher"
             android:textSize="@dimen/text_size_title"
             android:textStyle="bold"
-            android:textColor="@color/text_primary"
+            android:textColor="?attr/colorOnSurface"
             android:layout_marginBottom="@dimen/margin_large" />
 
         <TextView
@@ -28,6 +28,7 @@
             android:text="Resumen"
             android:textSize="@dimen/text_size_large"
             android:textStyle="bold"
+            android:textColor="?attr/colorOnSurface"
             android:layout_marginBottom="@dimen/margin_normal" />
 
         <LinearLayout
@@ -59,14 +60,14 @@
                         android:text="0"
                         android:textSize="@dimen/text_size_headline"
                         android:textStyle="bold"
-                        android:textColor="@color/purple_500" />
+                        android:textColor="?attr/colorPrimary" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/total_students"
                         android:textSize="@dimen/text_size_small"
-                        android:textColor="@color/text_secondary" />
+                        android:textColor="?attr/colorOnSurfaceVariant" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -99,7 +100,7 @@
                         android:layout_height="wrap_content"
                         android:text="@string/today_attendance"
                         android:textSize="@dimen/text_size_small"
-                        android:textColor="@color/text_secondary" />
+                        android:textColor="?attr/colorOnSurfaceVariant" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
@@ -110,6 +111,7 @@
             android:text="Accesos rápidos"
             android:textSize="@dimen/text_size_large"
             android:textStyle="bold"
+            android:textColor="?attr/colorOnSurface"
             android:layout_marginBottom="@dimen/margin_normal" />
 
         <com.google.android.material.card.MaterialCardView
@@ -131,7 +133,7 @@
                     android:layout_width="@dimen/icon_size_large"
                     android:layout_height="@dimen/icon_size_large"
                     android:src="@drawable/ic_calendar"
-                    app:tint="@color/purple_500"
+                    app:tint="?attr/colorPrimary"
                     android:contentDescription="@string/nav_attendance" />
 
                 <TextView
@@ -141,6 +143,7 @@
                     android:text="Tomar Asistencia"
                     android:textSize="@dimen/text_size_large"
                     android:textStyle="bold"
+                    android:textColor="?attr/colorOnSurface"
                     android:layout_marginStart="@dimen/margin_normal" />
 
                 <ImageView
@@ -148,7 +151,7 @@
                     android:layout_height="@dimen/icon_size_small"
                     android:src="@drawable/ic_arrow_forward"
                     android:contentDescription="ir"
-                    app:tint="?attr/colorControlNormal"/>
+                    app:tint="?attr/colorOnSurfaceVariant"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -171,7 +174,7 @@
                     android:layout_width="@dimen/icon_size_large"
                     android:layout_height="@dimen/icon_size_large"
                     android:src="@drawable/ic_grade"
-                    app:tint="@color/blue_500"
+                    app:tint="?attr/colorSecondary"
                     android:contentDescription="@string/nav_grades" />
 
                 <TextView
@@ -181,6 +184,7 @@
                     android:text="Registrar Calificaciones"
                     android:textSize="@dimen/text_size_large"
                     android:textStyle="bold"
+                    android:textColor="?attr/colorOnSurface"
                     android:layout_marginStart="@dimen/margin_normal" />
 
                 <ImageView
@@ -188,7 +192,7 @@
                     android:layout_height="@dimen/icon_size_small"
                     android:src="@drawable/ic_arrow_forward"
                     android:contentDescription="ir"
-                    app:tint="?attr/colorControlNormal"/>
+                    app:tint="?attr/colorOnSurfaceVariant"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -211,7 +215,7 @@
                     android:layout_width="@dimen/icon_size_large"
                     android:layout_height="@dimen/icon_size_large"
                     android:src="@drawable/ic_notifications"
-                    app:tint="@color/orange_500"
+                    app:tint="?attr/colorTertiary"
                     android:contentDescription="@string/nav_notices" />
 
                 <TextView
@@ -221,6 +225,7 @@
                     android:text="Publicar Avisos"
                     android:textSize="@dimen/text_size_large"
                     android:textStyle="bold"
+                    android:textColor="?attr/colorOnSurface"
                     android:layout_marginStart="@dimen/margin_normal" />
 
                 <ImageView
@@ -228,7 +233,7 @@
                     android:layout_height="@dimen/icon_size_small"
                     android:src="@drawable/ic_arrow_forward"
                     android:contentDescription="ir"
-                    app:tint="?attr/colorControlNormal"/>
+                    app:tint="?attr/colorOnSurfaceVariant"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -260,6 +265,7 @@
                     android:text="Subir Fotos/Videos"
                     android:textSize="@dimen/text_size_large"
                     android:textStyle="bold"
+                    android:textColor="?attr/colorOnSurface"
                     android:layout_marginStart="@dimen/margin_normal" />
 
                 <ImageView
@@ -267,7 +273,7 @@
                     android:layout_height="@dimen/icon_size_small"
                     android:src="@drawable/ic_arrow_forward"
                     android:contentDescription="ir"
-                    app:tint="?attr/colorControlNormal"/>
+                    app:tint="?attr/colorOnSurfaceVariant"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -278,34 +284,38 @@
             android:text="Ruta del Autobús Escolar"
             android:textSize="@dimen/text_size_large"
             android:textStyle="bold"
-            android:textColor="@color/text_primary"
+            android:textColor="?attr/colorOnSurface"
             android:layout_marginTop="@dimen/margin_large"
             android:layout_marginBottom="@dimen/margin_normal" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnStartBusRoute"
-            style="@style/Widget.MaterialComponents.Button"
+            style="@style/Widget.Material3.Button"
             android:layout_width="match_parent"
             android:layout_height="@dimen/button_height"
             android:text="Iniciar Recorrido"
             app:icon="@drawable/ic_play_arrow"
             android:layout_marginBottom="@dimen/margin_small"
-            android:visibility="gone" /> <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnFinishBusRoute"
-        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/button_height"
-        android:text="Finalizar Recorrido"
-        android:textColor="@color/error"
-        app:icon="@drawable/ic_stop"
-        app:strokeColor="@color/error"
-        android:visibility="gone" /> <ProgressBar
-        android:id="@+id/progressBusStatus"
-        style="?android:attr/progressBarStyle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginTop="@dimen/margin_small"
-        android:visibility="gone" />
+            android:visibility="gone" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnFinishBusRoute"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/button_height"
+            android:text="Finalizar Recorrido"
+            android:textColor="?attr/colorError"
+            app:icon="@drawable/ic_stop"
+            app:strokeColor="?attr/colorError"
+            android:visibility="gone" />
+
+        <ProgressBar
+            android:id="@+id/progressBusStatus"
+            style="?android:attr/progressBarStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="@dimen/margin_small"
+            android:visibility="gone" />
     </LinearLayout>
 </ScrollView>

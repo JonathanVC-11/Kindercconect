@@ -1,8 +1,10 @@
 package com.example.kinderconnect.ui.teacher;
 
-import android.content.Intent;
-import android.net.Uri;
+import android.content.Context;
+import android.content.Intent; // <-- AÑADIDO
+import android.net.Uri; // <-- AÑADIDO
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,16 +15,24 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
+import com.example.kinderconnect.R;
 import com.example.kinderconnect.databinding.FragmentTeacherGalleryBinding;
 import com.example.kinderconnect.data.local.PreferencesManager;
 import com.example.kinderconnect.data.model.GalleryItem;
 import com.example.kinderconnect.ui.adapters.GalleryAdapter;
 import com.example.kinderconnect.utils.Constants;
 import com.example.kinderconnect.utils.PermissionManager;
-import com.example.kinderconnect.utils.Resource; // <-- AÑADIDO
+import com.example.kinderconnect.utils.Resource;
+
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 public class TeacherGalleryFragment extends Fragment {
     private FragmentTeacherGalleryBinding binding;
@@ -34,8 +44,6 @@ public class TeacherGalleryFragment extends Fragment {
     private Uri selectedMediaUri;
     private Uri capturedPhotoUri;
     private String selectedMediaType;
-
-    // --- AÑADIR VARIABLE ---
     private String teacherGroupName = null;
 
     @Override
@@ -59,6 +67,8 @@ public class TeacherGalleryFragment extends Fragment {
                     if (result.getResultCode() == android.app.Activity.RESULT_OK) {
                         selectedMediaUri = capturedPhotoUri;
                         uploadMedia();
+                    } else {
+                        Toast.makeText(requireContext(), "Captura cancelada", Toast.LENGTH_SHORT).show();
                     }
                 }
         );
@@ -81,8 +91,7 @@ public class TeacherGalleryFragment extends Fragment {
         setupRecyclerView();
         setupListeners();
 
-        // --- MODIFICAR CARGA DE DATOS ---
-        binding.fabAddMedia.setEnabled(false); // Deshabilitar FAB hasta cargar grupo
+        binding.fabAddMedia.setEnabled(false);
         loadTeacherGroup();
     }
 
@@ -91,43 +100,83 @@ public class TeacherGalleryFragment extends Fragment {
         binding.recyclerView.setLayoutManager(new GridLayoutManager(requireContext(), 3));
         binding.recyclerView.setAdapter(adapter);
 
+        // --- CLICK LISTENER MODIFICADO ---
         adapter.setOnItemClickListener(item -> {
-            // Abrir imagen/video en pantalla completa
-            Toast.makeText(requireContext(), "Ver: " + item.getDescription(),
-                    Toast.LENGTH_SHORT).show();
+            // Antes: Toast.makeText(requireContext(), "Ver: " + item.getDescription(), Toast.LENGTH_SHORT).show();
+            openMediaViewer(item); // Ahora llama al visor
         });
+        // -----------------------------------
 
         adapter.setOnItemLongClickListener(item -> {
             showDeleteDialog(item);
         });
     }
 
+    // --- NUEVO MÉTODO AÑADIDO ---
+    /**
+     * Abre un visor nativo (Galería, Video Player) para el item seleccionado.
+     */
+    private void openMediaViewer(GalleryItem item) {
+        if (item == null || item.getMediaUrl() == null || item.getMediaUrl().isEmpty()) {
+            Toast.makeText(requireContext(), "No se pudo encontrar el archivo", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Usamos la URL original (mediaUrl), no el thumbnail
+        Uri mediaUri = Uri.parse(item.getMediaUrl());
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+
+        String mimeType;
+        if (Constants.MEDIA_VIDEO.equals(item.getMediaType())) {
+            mimeType = "video/*";
+        } else {
+            mimeType = "image/*";
+        }
+
+        intent.setDataAndType(mediaUri, mimeType);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+        try {
+            startActivity(intent);
+        } catch (android.content.ActivityNotFoundException e) {
+            Toast.makeText(requireContext(), "No hay ninguna aplicación para abrir este archivo", Toast.LENGTH_SHORT).show();
+        }
+    }
+    // ----------------------------
+
+
     private void setupListeners() {
         binding.fabAddMedia.setOnClickListener(v -> showMediaOptions());
     }
 
-    // --- NUEVO MÉTODO AÑADIDO ---
     private void loadTeacherGroup() {
         String teacherId = preferencesManager.getUserId();
         if (teacherId == null) return;
 
         binding.progressBar.setVisibility(View.VISIBLE);
+        binding.recyclerView.setVisibility(View.GONE);
+        binding.emptyView.getRoot().setVisibility(View.GONE);
 
         viewModel.getStudentsByTeacher(teacherId).observe(getViewLifecycleOwner(), resource -> {
+            if (binding == null) return;
+
             if (resource.getStatus() == Resource.Status.SUCCESS && resource.getData() != null && !resource.getData().isEmpty()) {
-                // Asumimos que la maestra solo tiene un grupo.
                 teacherGroupName = resource.getData().get(0).getGroupName();
-                loadGallery(); // Cargar galería AHORA que sabemos el grupo
-                binding.fabAddMedia.setEnabled(true); // Habilitar FAB
+                loadGallery();
+                binding.fabAddMedia.setEnabled(true);
             } else if (resource.getStatus() == Resource.Status.SUCCESS) {
-                // Maestra sin alumnos
                 binding.progressBar.setVisibility(View.GONE);
-                binding.tvEmpty.setText("No tienes alumnos asignados");
-                binding.tvEmpty.setVisibility(View.VISIBLE);
-                binding.fabAddMedia.setEnabled(false); // No puede subir fotos si no tiene grupo
+                binding.emptyView.getRoot().setVisibility(View.VISIBLE);
+                binding.emptyView.ivEmptyIcon.setImageResource(R.drawable.ic_people);
+                binding.emptyView.tvEmptyTitle.setText("No tienes alumnos");
+                binding.emptyView.tvEmptySubtitle.setText("No puedes subir fotos a la galería sin un grupo asignado.");
+                binding.fabAddMedia.setEnabled(false);
             } else if (resource.getStatus() == Resource.Status.ERROR) {
                 binding.progressBar.setVisibility(View.GONE);
-                Toast.makeText(requireContext(), "Error al cargar datos del grupo", Toast.LENGTH_SHORT).show();
+                binding.emptyView.getRoot().setVisibility(View.VISIBLE);
+                binding.emptyView.ivEmptyIcon.setImageResource(R.drawable.ic_close);
+                binding.emptyView.tvEmptyTitle.setText("Error");
+                binding.emptyView.tvEmptySubtitle.setText("Error al cargar datos del grupo.");
             }
         });
     }
@@ -156,15 +205,47 @@ public class TeacherGalleryFragment extends Fragment {
                 .show();
     }
 
+    private File createImageFile() throws IOException {
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File image = File.createTempFile(
+                imageFileName,  /* prefix */
+                ".jpg",         /* suffix */
+                storageDir      /* directory */
+        );
+        return image;
+    }
+
     private void takePhoto() {
         if (!PermissionManager.hasCameraPermission(requireContext())) {
             PermissionManager.requestCameraPermission(requireActivity());
             return;
         }
 
-        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        cameraLauncher.launch(intent);
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (takePictureIntent.resolveActivity(requireContext().getPackageManager()) != null) {
+            File photoFile = null;
+            try {
+                photoFile = createImageFile();
+            } catch (IOException ex) {
+                Toast.makeText(requireContext(), "Error al crear archivo de imagen", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (photoFile != null) {
+                capturedPhotoUri = FileProvider.getUriForFile(
+                        requireContext(),
+                        requireContext().getPackageName() + ".fileprovider",
+                        photoFile
+                );
+
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, capturedPhotoUri);
+                cameraLauncher.launch(takePictureIntent);
+            }
+        }
     }
+
 
     private void selectImage() {
         if (!PermissionManager.hasStoragePermission(requireContext())) {
@@ -189,11 +270,13 @@ public class TeacherGalleryFragment extends Fragment {
     }
 
     private void uploadMedia() {
-        if (selectedMediaUri == null) return;
+        if (selectedMediaUri == null) {
+            Toast.makeText(requireContext(), "No se seleccionó ningún archivo", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-        // --- AÑADIR VALIDACIÓN ---
         if (teacherGroupName == null) {
-            Toast.makeText(requireContext(), "No se pudo determinar tu grupo para subir la foto", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), "No se pudo determinar tu grupo", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -204,20 +287,16 @@ public class TeacherGalleryFragment extends Fragment {
                 selectedMediaType,
                 "Actividad escolar"
         );
-
-        // --- CORRECCIÓN DE "Grupo A" ---
-        // galleryItem.setGroupName("Grupo A"); // <-- ESTE ES EL ERROR
-        galleryItem.setGroupName(teacherGroupName); // <-- CORREGIDO
+        galleryItem.setGroupName(teacherGroupName);
 
         binding.progressBar.setVisibility(View.VISIBLE);
         binding.fabAddMedia.setEnabled(false);
 
-        viewModel.uploadMedia(galleryItem, selectedMediaUri)
+        viewModel.uploadMedia(galleryItem, selectedMediaUri, requireContext())
                 .observe(getViewLifecycleOwner(), resource -> {
                     if (resource != null) {
                         switch (resource.getStatus()) {
                             case LOADING:
-                                // Ya está mostrando el progress
                                 break;
                             case SUCCESS:
                                 binding.progressBar.setVisibility(View.GONE);
@@ -225,7 +304,6 @@ public class TeacherGalleryFragment extends Fragment {
                                 Toast.makeText(requireContext(),
                                         "Contenido subido correctamente",
                                         Toast.LENGTH_SHORT).show();
-                                // loadGallery(); // No es necesario, el listener lo actualiza
                                 break;
 
                             case ERROR:
@@ -240,40 +318,50 @@ public class TeacherGalleryFragment extends Fragment {
     }
 
     private void loadGallery() {
-        // --- AÑADIR VALIDACIÓN ---
         if (teacherGroupName == null) {
             binding.progressBar.setVisibility(View.GONE);
-            binding.tvEmpty.setVisibility(View.VISIBLE);
-            return; // No cargar galería si no hay grupo
+            binding.emptyView.getRoot().setVisibility(View.VISIBLE);
+            binding.emptyView.ivEmptyIcon.setImageResource(R.drawable.ic_people);
+            binding.emptyView.tvEmptyTitle.setText("Error");
+            binding.emptyView.tvEmptySubtitle.setText("No se pudo determinar el grupo.");
+            return;
         }
 
         binding.progressBar.setVisibility(View.VISIBLE);
+        binding.recyclerView.setVisibility(View.GONE);
+        binding.emptyView.getRoot().setVisibility(View.GONE);
 
-        // --- CORRECCIÓN DE "Grupo A" ---
-        // viewModel.getGalleryByGroup("Grupo A").observe(getViewLifecycleOwner(), resource -> { // <-- ERROR
-        viewModel.getGalleryByGroup(teacherGroupName).observe(getViewLifecycleOwner(), resource -> { // <-- CORREGIDO
+        viewModel.getGalleryByGroup(teacherGroupName).observe(getViewLifecycleOwner(), resource -> {
+            if (binding == null) return;
             if (resource != null) {
                 switch (resource.getStatus()) {
                     case LOADING:
                         binding.progressBar.setVisibility(View.VISIBLE);
+                        binding.recyclerView.setVisibility(View.GONE);
+                        binding.emptyView.getRoot().setVisibility(View.GONE);
                         break;
 
                     case SUCCESS:
                         binding.progressBar.setVisibility(View.GONE);
                         if (resource.getData() != null && !resource.getData().isEmpty()) {
                             binding.recyclerView.setVisibility(View.VISIBLE);
-                            binding.tvEmpty.setVisibility(View.GONE);
+                            binding.emptyView.getRoot().setVisibility(View.GONE);
                             adapter.submitList(resource.getData());
                         } else {
                             binding.recyclerView.setVisibility(View.GONE);
-                            binding.tvEmpty.setVisibility(View.VISIBLE);
+                            binding.emptyView.getRoot().setVisibility(View.VISIBLE);
+                            binding.emptyView.ivEmptyIcon.setImageResource(R.drawable.ic_gallery);
+                            binding.emptyView.tvEmptyTitle.setText("Galería Vacía");
+                            binding.emptyView.tvEmptySubtitle.setText("Presiona el botón '+' para subir la primera foto o video.");
                         }
                         break;
 
                     case ERROR:
                         binding.progressBar.setVisibility(View.GONE);
-                        Toast.makeText(requireContext(), resource.getMessage(),
-                                Toast.LENGTH_SHORT).show();
+                        binding.emptyView.getRoot().setVisibility(View.VISIBLE);
+                        binding.emptyView.ivEmptyIcon.setImageResource(R.drawable.ic_close);
+                        binding.emptyView.tvEmptyTitle.setText("Error");
+                        binding.emptyView.tvEmptySubtitle.setText(resource.getMessage());
                         break;
                 }
             }
@@ -298,7 +386,6 @@ public class TeacherGalleryFragment extends Fragment {
                         Toast.makeText(requireContext(),
                                 "Elemento eliminado",
                                 Toast.LENGTH_SHORT).show();
-                        // loadGallery(); // No es necesario, el listener lo actualiza
                     }
                 });
     }

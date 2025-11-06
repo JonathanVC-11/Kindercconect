@@ -47,10 +47,7 @@ public class NoticeListFragment extends Fragment {
         binding.recyclerView.setAdapter(adapter);
 
         adapter.setOnItemClickListener(notice -> {
-            // Marcar como leído
             viewModel.markNoticeAsRead(notice.getNoticeId(), preferencesManager.getUserId());
-
-            // Navegar a detalle
             Bundle args = new Bundle();
             args.putString("noticeId", notice.getNoticeId());
             Navigation.findNavController(binding.getRoot())
@@ -58,52 +55,74 @@ public class NoticeListFragment extends Fragment {
         });
     }
 
+    // --- LÓGICA DE ESTADO VACÍO MODIFICADA ---
     private void loadStudentGroup() {
         String parentId = preferencesManager.getUserId();
 
         binding.progressBar.setVisibility(View.VISIBLE);
+        binding.recyclerView.setVisibility(View.GONE);
+        binding.emptyView.getRoot().setVisibility(View.GONE);
 
-        // Primero obtener el estudiante para saber su grupo
         viewModel.getStudentsByParent(parentId).observe(getViewLifecycleOwner(), resource -> {
+            if (binding == null) return;
             if (resource != null && resource.getStatus() ==
                     com.example.kinderconnect.utils.Resource.Status.SUCCESS) {
 
                 if (resource.getData() != null && !resource.getData().isEmpty()) {
                     studentGroupName = resource.getData().get(0).getGroupName();
                     loadNotices();
+                } else {
+                    // No tiene alumnos
+                    binding.progressBar.setVisibility(View.GONE);
+                    binding.emptyView.getRoot().setVisibility(View.VISIBLE);
+                    binding.emptyView.ivEmptyIcon.setImageResource(R.drawable.ic_people);
+                    binding.emptyView.tvEmptyTitle.setText("Sin alumnos");
+                    binding.emptyView.tvEmptySubtitle.setText("No hay alumnos asignados para ver avisos.");
                 }
+            } else if (resource != null) {
+                // Error cargando alumno
+                binding.progressBar.setVisibility(View.GONE);
+                binding.emptyView.getRoot().setVisibility(View.VISIBLE);
+                binding.emptyView.ivEmptyIcon.setImageResource(R.drawable.ic_close);
+                binding.emptyView.tvEmptyTitle.setText("Error");
+                binding.emptyView.tvEmptySubtitle.setText(resource.getMessage());
             }
         });
     }
 
     private void loadNotices() {
         viewModel.getNoticesByGroup(studentGroupName).observe(getViewLifecycleOwner(), resource -> {
+            if (binding == null) return;
             if (resource != null) {
                 switch (resource.getStatus()) {
                     case LOADING:
                         binding.progressBar.setVisibility(View.VISIBLE);
                         binding.recyclerView.setVisibility(View.GONE);
-                        binding.tvEmpty.setVisibility(View.GONE);
+                        binding.emptyView.getRoot().setVisibility(View.GONE);
                         break;
 
                     case SUCCESS:
                         binding.progressBar.setVisibility(View.GONE);
                         if (resource.getData() != null && !resource.getData().isEmpty()) {
                             binding.recyclerView.setVisibility(View.VISIBLE);
-                            binding.tvEmpty.setVisibility(View.GONE);
+                            binding.emptyView.getRoot().setVisibility(View.GONE);
                             adapter.submitList(resource.getData());
                         } else {
                             binding.recyclerView.setVisibility(View.GONE);
-                            binding.tvEmpty.setVisibility(View.VISIBLE);
+                            binding.emptyView.getRoot().setVisibility(View.VISIBLE);
+                            binding.emptyView.ivEmptyIcon.setImageResource(R.drawable.ic_notifications);
+                            binding.emptyView.tvEmptyTitle.setText("No hay avisos");
+                            binding.emptyView.tvEmptySubtitle.setText("Aún no hay avisos publicados para este grupo.");
                         }
                         break;
 
                     case ERROR:
                         binding.progressBar.setVisibility(View.GONE);
                         binding.recyclerView.setVisibility(View.GONE);
-                        binding.tvEmpty.setVisibility(View.VISIBLE);
-                        Toast.makeText(requireContext(), resource.getMessage(),
-                                Toast.LENGTH_SHORT).show();
+                        binding.emptyView.getRoot().setVisibility(View.VISIBLE);
+                        binding.emptyView.ivEmptyIcon.setImageResource(R.drawable.ic_close);
+                        binding.emptyView.tvEmptyTitle.setText("Error");
+                        binding.emptyView.tvEmptySubtitle.setText(resource.getMessage());
                         break;
                 }
             }

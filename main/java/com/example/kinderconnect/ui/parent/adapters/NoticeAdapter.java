@@ -17,6 +17,19 @@ public class NoticeAdapter extends ListAdapter<Notice, NoticeAdapter.NoticeViewH
     private OnItemClickListener listener;
     private final String currentUserId;
 
+    // --- INICIO DE CÓDIGO AÑADIDO ---
+    private OnItemLongClickListener longClickListener;
+
+    public interface OnItemLongClickListener {
+        void onItemLongClick(Notice notice);
+    }
+
+    public void setOnItemLongClickListener(OnItemLongClickListener listener) {
+        this.longClickListener = listener;
+    }
+    // --- FIN DE CÓDIGO AÑADIDO ---
+
+
     public NoticeAdapter(String currentUserId) {
         super(DIFF_CALLBACK);
         this.currentUserId = currentUserId;
@@ -61,6 +74,17 @@ public class NoticeAdapter extends ListAdapter<Notice, NoticeAdapter.NoticeViewH
                     listener.onItemClick(getItem(position));
                 }
             });
+
+            // --- INICIO DE CÓDIGO AÑADIDO ---
+            binding.getRoot().setOnLongClickListener(v -> {
+                int position = getAdapterPosition();
+                if (position != RecyclerView.NO_POSITION && longClickListener != null) {
+                    longClickListener.onItemLongClick(getItem(position));
+                    return true; // Importante: retornar true para consumir el evento
+                }
+                return false;
+            });
+            // --- FIN DE CÓDIGO AÑADIDO ---
         }
 
         void bind(Notice notice) {

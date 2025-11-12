@@ -1,24 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/background_light">
-
-    <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/toolbar"
-        android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="@color/purple_500"
-        app:title="@string/add_student"
-        app:titleTextColor="@color/white"
-        app:navigationIcon="@android:drawable/ic_menu_close_clear_cancel" />
+    android:background="?attr/colorSurface"> <com.google.android.material.appbar.MaterialToolbar
+    android:id="@+id/toolbar"
+    android:layout_width="match_parent"
+    android:layout_height="?attr/actionBarSize"
+    android:background="?attr/colorPrimary"
+    app:title="@string/add_student"
+    app:titleTextColor="?attr/colorOnPrimary"
+    app:navigationIcon="@drawable/ic_close"
+    app:navigationIconTint="?attr/colorOnPrimary" />
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:fillViewport="true">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -26,138 +27,158 @@
             android:orientation="vertical"
             android:padding="@dimen/padding_large">
 
-            <!-- Photo -->
-            <ImageView
+            <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/ivStudentPhoto"
                 android:layout_width="120dp"
                 android:layout_height="120dp"
-                android:src="@drawable/ic_logo"
                 android:layout_gravity="center"
-                android:layout_marginBottom="@dimen/margin_normal"
-                android:contentDescription="@string/student_name" />
+                android:layout_marginBottom="@dimen/margin_small"
+                android:contentDescription="@string/student_name"
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_logo"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
+                app:strokeColor="?attr/colorPrimary"
+                app:strokeWidth="2dp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Toca para seleccionar foto"
-                android:textSize="@dimen/text_size_small"
-                android:textColor="@color/text_secondary"
                 android:layout_gravity="center"
-                android:layout_marginBottom="@dimen/margin_large" />
+                android:layout_marginBottom="@dimen/margin_large"
+                android:text="Toca para seleccionar foto"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="@dimen/text_size_small" />
 
-            <!-- Full Name -->
+            <TextView
+                style="?attr/textAppearanceTitleMedium"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/margin_small"
+                android:text="Datos del Alumno"
+                android:textColor="?attr/colorPrimary" />
+
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilFullName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/margin_normal"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                app:startIconDrawable="@drawable/ic_person"
+                android:hint="@string/student_name">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etFullName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/student_name"
-                    android:inputType="textPersonName" />
+                    android:inputType="textPersonName|textCapWords" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Birth Date -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilBirthDate"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/margin_normal"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                app:startIconDrawable="@drawable/ic_calendar"
+                android:hint="@string/birth_date">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etBirthDate"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/birth_date"
-                    android:focusable="false"
                     android:clickable="true"
+                    android:focusable="false"
                     android:inputType="none" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Group Name -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilGroupName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="@dimen/margin_normal"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                android:layout_marginBottom="@dimen/margin_large"
+                app:startIconDrawable="@drawable/ic_people"
+                android:hint="@string/group_name">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etGroupName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/group_name"
-                    android:inputType="text" />
+                    android:inputType="textCapWords" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Parent Email -->
+            <TextView
+                style="?attr/textAppearanceTitleMedium"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/margin_small"
+                android:text="Datos de Contacto"
+                android:textColor="?attr/colorPrimary" />
+
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilParentEmail"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/margin_normal"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                app:startIconDrawable="@drawable/ic_email"
+                android:hint="Correo del padre/madre">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etParentEmail"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Correo del padre/madre"
                     android:inputType="textEmailAddress" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Emergency Contact -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilEmergencyContact"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="@dimen/margin_normal"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                android:layout_marginBottom="@dimen/margin_large"
+                app:startIconDrawable="@drawable/ic_phone"
+                android:hint="@string/emergency_contact">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etEmergencyContact"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/emergency_contact"
                     android:inputType="phone" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Allergies -->
+            <TextView
+                style="?attr/textAppearanceTitleMedium"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/margin_small"
+                android:text="Información Médica (Opcional)"
+                android:textColor="?attr/colorPrimary" />
+
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilAllergies"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/margin_normal"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                android:hint="@string/allergies">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etAllergies"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/allergies"
-                    android:inputType="textMultiLine"
+                    android:gravity="top"
+                    android:inputType="textMultiLine|textCapSentences"
                     android:minLines="2" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Medical Notes -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilMedicalNotes"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/margin_large"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                android:hint="@string/medical_notes">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etMedicalNotes"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/medical_notes"
-                    android:inputType="textMultiLine"
+                    android:gravity="top"
+                    android:inputType="textMultiLine|textCapSentences"
                     android:minLines="3" />
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -165,6 +186,7 @@
                 android:id="@+id/btnSave"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/button_height"
+                android:layout_marginTop="@dimen/margin_normal"
                 android:text="@string/save" />
 
             <ProgressBar

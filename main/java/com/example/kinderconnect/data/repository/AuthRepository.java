@@ -1,5 +1,6 @@
 package com.example.kinderconnect.data.repository;
 
+import android.util.Log; // <-- AÑADIDO
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import com.google.firebase.auth.FirebaseAuth;
@@ -14,6 +15,7 @@ public class AuthRepository {
     private final FirebaseAuth firebaseAuth;
     private final FirebaseFirestore firestore;
     private final MutableLiveData<FirebaseUser> userLiveData;
+    private static final String TAG = "AuthRepository"; // <-- AÑADIDO
 
     public AuthRepository() {
         this.firebaseAuth = FirebaseAuth.getInstance();
@@ -31,6 +33,8 @@ public class AuthRepository {
             userLiveData.postValue(user);
         });
     }
+
+    // ... (loginUser, registerUser, saveUserToFirestore, getUserData, updateUserPhotoUrl... sin cambios) ...
 
     public LiveData<Resource<FirebaseUser>> loginUser(String email, String password) {
         MutableLiveData<Resource<FirebaseUser>> result = new MutableLiveData<>();
@@ -107,7 +111,6 @@ public class AuthRepository {
         return result;
     }
 
-    // --- NUEVO MÉTODO AÑADIDO ---
     public LiveData<Resource<Void>> updateUserPhotoUrl(String uid, String photoUrl) {
         MutableLiveData<Resource<Void>> result = new MutableLiveData<>();
         result.setValue(Resource.loading(null));
@@ -120,7 +123,41 @@ public class AuthRepository {
 
         return result;
     }
-    // ----------------------------
+
+    // --- INICIO DE CÓDIGO AÑADIDO ---
+    /**
+     * Actualiza el token FCM para un usuario. Devuelve LiveData (para ViewModels).
+     */
+    public LiveData<Resource<Void>> updateUserToken(String uid, String token) {
+        MutableLiveData<Resource<Void>> result = new MutableLiveData<>();
+        result.setValue(Resource.loading(null));
+
+        firestore.collection(Constants.COLLECTION_USERS)
+                .document(uid)
+                .update("fcmToken", token)
+                .addOnSuccessListener(aVoid -> result.setValue(Resource.success(null)))
+                .addOnFailureListener(e -> result.setValue(Resource.error("Error al actualizar token: " + e.getMessage(), null)));
+
+        return result;
+    }
+
+    /**
+     * Actualiza el token FCM para un usuario. No devuelve nada (para Servicios).
+     */
+    public void updateUserTokenFireAndForget(String uid, String token) {
+        if (uid == null || token == null) {
+            Log.e(TAG, "UID o Token nulos, no se puede actualizar FCM token.");
+            return;
+        }
+
+        firestore.collection(Constants.COLLECTION_USERS)
+                .document(uid)
+                .update("fcmToken", token)
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "FCM Token actualizado (Fire and Forget)"))
+                .addOnFailureListener(e -> Log.e(TAG, "Error al actualizar FCM Token (Fire and Forget)", e));
+    }
+    // --- FIN DE CÓDIGO AÑADIDO ---
+
 
     public void logout() {
         firebaseAuth.signOut();

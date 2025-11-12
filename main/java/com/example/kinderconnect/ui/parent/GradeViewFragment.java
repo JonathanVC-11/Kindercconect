@@ -11,19 +11,24 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
-import com.example.kinderconnect.R; // <-- AÑADIDO
+import com.example.kinderconnect.R;
 import com.example.kinderconnect.databinding.FragmentGradeViewBinding;
-import com.example.kinderconnect.data.local.PreferencesManager;
+import com.example.kinderconnect.data.local.PreferencesManager; // <-- AÑADIDO
 import com.example.kinderconnect.data.model.Grade;
 import com.example.kinderconnect.utils.Constants;
 
 public class GradeViewFragment extends Fragment {
     private FragmentGradeViewBinding binding;
     private ParentViewModel viewModel;
-    private PreferencesManager preferencesManager;
+
+    // --- INICIO DE CÓDIGO MODIFICADO ---
+    private PreferencesManager preferencesManager; // <-- AÑADIDO
     private String studentId;
+    private String studentName;
+    // --- FIN DE CÓDIGO MODIFICADO ---
+
     private int selectedPeriod = 1;
-    private String[] periods; // --- AÑADIDO ---
+    private String[] periods;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
@@ -37,14 +42,35 @@ public class GradeViewFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         viewModel = new ViewModelProvider(this).get(ParentViewModel.class);
-        preferencesManager = new PreferencesManager(requireContext());
+        preferencesManager = new PreferencesManager(requireContext()); // <-- AÑADIDO
 
-        setupPeriodDropdown(); // --- MÉTODO RENOMBRADO ---
-        loadStudentData();
+        // --- INICIO DE CÓDIGO MODIFICADO ---
+        // Lógica para determinar el alumno
+        if (getArguments() != null && getArguments().getString("studentId") != null) {
+            // Opción 1: Venimos desde los accesos rápidos (Home)
+            studentId = getArguments().getString("studentId");
+            studentName = getArguments().getString("studentName");
+        } else {
+            // Opción 2: Venimos desde la barra de navegación inferior
+            studentId = preferencesManager.getCurrentStudentId();
+            studentName = preferencesManager.getCurrentStudentName();
+        }
+
+        if (studentId == null || studentName == null) {
+            Toast.makeText(requireContext(), "Error: No se pudo cargar el alumno", Toast.LENGTH_SHORT).show();
+            // Opcional: navegar de vuelta a Home
+            return;
+        }
+
+        binding.tvStudentName.setText(studentName);
+        // --- FIN DE CÓDIGO MODIFICADO ---
+
+        setupPeriodDropdown();
+        loadGrades(); // Llamar a loadGrades directamente
     }
 
-    // --- LÓGICA DE SPINNER REEMPLAZADA POR DROPDOWN ---
     private void setupPeriodDropdown() {
+        // ... (sin cambios) ...
         periods = new String[]{"Periodo 1", "Periodo 2", "Periodo 3"};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
                 requireContext(),
@@ -52,47 +78,30 @@ public class GradeViewFragment extends Fragment {
                 periods
         );
         binding.actPeriod.setAdapter(adapter);
-        binding.actPeriod.setText(periods[0], false); // Poner valor por defecto
+        binding.actPeriod.setText(periods[0], false);
 
-        // Cambiar el listener
         binding.actPeriod.setOnItemClickListener((parent, view, position, id) -> {
             selectedPeriod = position + 1;
             loadGrades();
         });
     }
 
-    private void loadStudentData() {
-        String parentId = preferencesManager.getUserId();
-
-        viewModel.getStudentsByParent(parentId).observe(getViewLifecycleOwner(), resource -> {
-            if (resource != null && resource.getStatus() ==
-                    com.example.kinderconnect.utils.Resource.Status.SUCCESS) {
-
-                if (resource.getData() != null && !resource.getData().isEmpty()) {
-                    studentId = resource.getData().get(0).getStudentId();
-                    binding.tvStudentName.setText(resource.getData().get(0).getFullName());
-                    loadGrades();
-                }
-            }
-        });
-    }
-
     private void loadGrades() {
+        // ... (sin cambios) ...
         if (studentId == null) return;
 
         binding.progressBar.setVisibility(View.VISIBLE);
         binding.scrollView.setVisibility(View.GONE);
-        binding.tvEmpty.setVisibility(View.GONE); // Ocultar mensaje vacío al cargar
+        binding.tvEmpty.setVisibility(View.GONE);
 
         viewModel.getGradeByStudentAndPeriod(studentId, selectedPeriod)
                 .observe(getViewLifecycleOwner(), resource -> {
-                    if (binding == null) return; // Vista destruida
+                    if (binding == null) return;
 
                     if (resource != null) {
                         switch (resource.getStatus()) {
                             case LOADING:
                                 break;
-
                             case SUCCESS:
                                 binding.progressBar.setVisibility(View.GONE);
                                 if (resource.getData() != null) {
@@ -104,7 +113,6 @@ public class GradeViewFragment extends Fragment {
                                     binding.tvEmpty.setVisibility(View.VISIBLE);
                                 }
                                 break;
-
                             case ERROR:
                                 binding.progressBar.setVisibility(View.GONE);
                                 binding.scrollView.setVisibility(View.GONE);
@@ -117,6 +125,8 @@ public class GradeViewFragment extends Fragment {
                 });
     }
 
+    // ... (El resto de la clase: displayGrades, setAreaData, getLevelText, getLevelColor, onDestroyView
+    // no necesitan cambios) ...
     private void displayGrades(Grade grade) {
         if (grade.getEvaluations() == null) return;
 
@@ -133,7 +143,7 @@ public class GradeViewFragment extends Fragment {
     private void setAreaData(int areaIndex, Grade.AreaEvaluation evaluation) {
         String level = getLevelText(evaluation.getLevel());
         int colorRes = getLevelColor(evaluation.getLevel());
-        int color = ContextCompat.getColor(requireContext(), colorRes); // Obtener color
+        int color = ContextCompat.getColor(requireContext(), colorRes);
 
         switch (areaIndex) {
             case 0:
@@ -180,15 +190,14 @@ public class GradeViewFragment extends Fragment {
         }
     }
 
-    // --- COLORES ACTUALIZADOS A M3 ---
     private int getLevelColor(String level) {
         if (level == null) return R.color.onSurfaceVariant;
         switch (level) {
-            case Constants.GRADE_REQUIERE_APOYO: return R.color.error; // Rojo M3
-            case Constants.GRADE_EN_DESARROLLO: return R.color.tertiary; // Naranja M3
-            case Constants.GRADE_ESPERADO: return R.color.green_500; // Verde
-            case Constants.GRADE_SOBRESALIENTE: return R.color.primary; // Azul M3
-            default: return R.color.onSurfaceVariant; // Gris
+            case Constants.GRADE_REQUIERE_APOYO: return R.color.error;
+            case Constants.GRADE_EN_DESARROLLO: return R.color.tertiary;
+            case Constants.GRADE_ESPERADO: return R.color.green_500;
+            case Constants.GRADE_SOBRESALIENTE: return R.color.primary;
+            default: return R.color.onSurfaceVariant;
         }
     }
 

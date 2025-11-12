@@ -31,13 +31,27 @@ public class PublishNoticeFragment extends Fragment {
     private ActivityResultLauncher<Intent> imagePickerLauncher;
     private String teacherGroupName = null;
 
-    // --- AÑADIDO: Arrays para los menús ---
     private String[] categories;
     private String[] scopes;
+
+    // --- INICIO DE CÓDIGO AÑADIDO ---
+    private String existingNoticeId = null;
+    private Notice noticeToEdit = null;
+    private boolean isEditMode = false;
+    // --- FIN DE CÓDIGO AÑADIDO ---
+
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // --- INICIO DE CÓDIGO AÑADIDO ---
+        // Recuperar el ID del aviso, si se pasó
+        if (getArguments() != null) {
+            existingNoticeId = getArguments().getString("noticeId");
+            isEditMode = (existingNoticeId != null);
+        }
+        // --- FIN DE CÓDIGO AÑADIDO ---
 
         imagePickerLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
@@ -46,7 +60,7 @@ public class PublishNoticeFragment extends Fragment {
                             && result.getData() != null) {
                         selectedImageUri = result.getData().getData();
                         binding.tvImageSelected.setVisibility(View.VISIBLE);
-                        binding.tvImageSelected.setText("Imagen seleccionada");
+                        binding.tvImageSelected.setText("Nueva imagen seleccionada");
                     }
                 }
         );
@@ -67,11 +81,24 @@ public class PublishNoticeFragment extends Fragment {
         preferencesManager = new PreferencesManager(requireContext());
 
         setupToolbar();
-        setupDropdowns(); // --- MÉTODO RENOMBRADO ---
+        setupDropdowns();
         setupListeners();
 
+        // Deshabilitar el botón de publicar hasta que sepamos el grupo de la maestra
         binding.btnPublish.setEnabled(false);
         loadTeacherGroup();
+
+        // --- INICIO DE CÓDIGO AÑADIDO ---
+        // Si estamos en modo edición, cargar los datos
+        if (isEditMode) {
+            binding.toolbar.setTitle("Editar Aviso");
+            binding.btnPublish.setText("Actualizar Aviso");
+            loadNoticeData();
+        } else {
+            binding.toolbar.setTitle("Publicar Aviso");
+            binding.btnPublish.setText("Publicar");
+        }
+        // --- FIN DE CÓDIGO AÑADIDO ---
     }
 
     private void setupToolbar() {
@@ -79,19 +106,18 @@ public class PublishNoticeFragment extends Fragment {
                 Navigation.findNavController(v).navigateUp());
     }
 
-    // --- LÓGICA DE SPINNER REEMPLAZADA POR DROPDOWN ---
     private void setupDropdowns() {
-        // Category dropdown
         categories = new String[]{"Tarea", "Evento", "Recordatorio", "Urgente"};
         ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(
                 requireContext(),
-                android.R.layout.simple_dropdown_item_1line, // Usar layout de dropdown
+                android.R.layout.simple_dropdown_item_1line,
                 categories
         );
         binding.actCategory.setAdapter(categoryAdapter);
-        binding.actCategory.setText(categories[0], false); // Poner valor por defecto
+        if (!isEditMode) { // Solo poner por defecto si es nuevo
+            binding.actCategory.setText(categories[0], false);
+        }
 
-        // Scope dropdown
         scopes = new String[]{"Mi grupo", "Toda la escuela"};
         ArrayAdapter<String> scopeAdapter = new ArrayAdapter<>(
                 requireContext(),
@@ -99,12 +125,18 @@ public class PublishNoticeFragment extends Fragment {
                 scopes
         );
         binding.actScope.setAdapter(scopeAdapter);
-        binding.actScope.setText(scopes[0], false); // Poner valor por defecto
+        if (!isEditMode) { // Solo poner por defecto si es nuevo
+            binding.actScope.setText(scopes[0], false);
+        }
     }
 
     private void setupListeners() {
         binding.btnAttachImage.setOnClickListener(v -> selectImage());
-        binding.btnPublish.setOnClickListener(v -> publishNotice());
+
+        // --- CÓDIGO MODIFICADO ---
+        // El botón ahora llama a 'saveNotice' que decide si crear o actualizar
+        binding.btnPublish.setOnClickListener(v -> saveNotice());
+        // --- FIN DE CÓDIGO MODIFICADO ---
     }
 
     private void loadTeacherGroup() {
@@ -134,8 +166,53 @@ public class PublishNoticeFragment extends Fragment {
         imagePickerLauncher.launch(intent);
     }
 
-    // --- LÓGICA DE PUBLICACIÓN MODIFICADA ---
-    private void publishNotice() {
+    // --- INICIO DE CÓDIGO AÑADIDO ---
+    private void loadNoticeData() {
+        binding.progressBar.setVisibility(View.VISIBLE);
+        viewModel.getNoticeById(existingNoticeId).observe(getViewLifecycleOwner(), resource -> {
+            if (resource == null) return;
+            switch (resource.getStatus()) {
+                case LOADING:
+                    break;
+                case SUCCESS:
+                    binding.progressBar.setVisibility(View.GONE);
+                    noticeToEdit = resource.getData();
+                    if (noticeToEdit != null) {
+                        populateUi(noticeToEdit);
+                    } else {
+                        Toast.makeText(requireContext(), "No se pudo cargar el aviso", Toast.LENGTH_SHORT).show();
+                        Navigation.findNavController(binding.getRoot()).navigateUp();
+                    }
+                    break;
+                case ERROR:
+                    binding.progressBar.setVisibility(View.GONE);
+                    Toast.makeText(requireContext(), resource.getMessage(), Toast.LENGTH_SHORT).show();
+                    Navigation.findNavController(binding.getRoot()).navigateUp();
+                    break;
+            }
+        });
+    }
+
+    private void populateUi(Notice notice) {
+        binding.etTitle.setText(notice.getTitle());
+        binding.etDescription.setText(notice.getDescription());
+
+        // Mapear el valor constante (ej: "TAREA") al texto del dropdown (ej: "Tarea")
+        binding.actCategory.setText(getCategoryString(notice.getCategory()), false);
+        binding.actScope.setText(getScopeString(notice.getScope()), false);
+
+        if (notice.getImageUrl() != null && !notice.getImageUrl().isEmpty()) {
+            binding.tvImageSelected.setText("Imagen adjunta. Toca para cambiar.");
+            binding.tvImageSelected.setVisibility(View.VISIBLE);
+        } else {
+            binding.tvImageSelected.setVisibility(View.GONE);
+        }
+    }
+    // --- FIN DE CÓDIGO AÑADIDO ---
+
+
+    // --- MÉTODO 'publishNotice' RENOMBRADO Y MODIFICADO ---
+    private void saveNotice() {
         String title = binding.etTitle.getText().toString().trim();
         String description = binding.etDescription.getText().toString().trim();
 
@@ -154,56 +231,107 @@ public class PublishNoticeFragment extends Fragment {
         String teacherId = preferencesManager.getUserId();
         String teacherName = preferencesManager.getUserName();
 
-        // Obtener valores desde el texto del AutoCompleteTextView
         String categoryString = binding.actCategory.getText().toString();
         String scopeString = binding.actScope.getText().toString();
 
         String category = getCategoryConstant(categoryString);
-        String scope = scopeString.equals(scopes[0]) ? // Comparar con el array
+        String scope = scopeString.equals(scopes[0]) ?
                 Constants.SCOPE_GROUP : Constants.SCOPE_SCHOOL;
-
-        Notice notice = new Notice(teacherId, title, description, category, scope);
-        notice.setTeacherName(teacherName);
-
-        if (scope.equals(Constants.SCOPE_GROUP)) {
-            if (teacherGroupName == null || teacherGroupName.isEmpty()) {
-                Toast.makeText(requireContext(), "No tienes un grupo asignado para publicar", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            notice.setGroupName(teacherGroupName);
-        }
-
-        Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.DAY_OF_YEAR, 7);
-        notice.setValidUntil(calendar.getTime());
 
         binding.progressBar.setVisibility(View.VISIBLE);
         binding.btnPublish.setEnabled(false);
 
-        viewModel.publishNotice(notice, selectedImageUri).observe(getViewLifecycleOwner(), resource -> {
-            if (resource != null) {
-                switch (resource.getStatus()) {
-                    case LOADING:
-                        break;
-                    case SUCCESS:
-                        binding.progressBar.setVisibility(View.GONE);
-                        Toast.makeText(requireContext(),
-                                "Aviso publicado correctamente",
-                                Toast.LENGTH_SHORT).show();
-                        Navigation.findNavController(binding.getRoot()).navigateUp();
-                        break;
-                    case ERROR:
-                        binding.progressBar.setVisibility(View.GONE);
-                        binding.btnPublish.setEnabled(true);
-                        Toast.makeText(requireContext(), resource.getMessage(),
-                                Toast.LENGTH_SHORT).show();
-                        break;
-                }
+        if (isEditMode) {
+            // --- LÓGICA DE ACTUALIZACIÓN ---
+            noticeToEdit.setTitle(title);
+            noticeToEdit.setDescription(description);
+            noticeToEdit.setCategory(category);
+            noticeToEdit.setScope(scope);
+            noticeToEdit.setTeacherName(teacherName); // Actualizar por si la maestra cambió de nombre
+
+            if (scope.equals(Constants.SCOPE_GROUP)) {
+                noticeToEdit.setGroupName(teacherGroupName);
+            } else {
+                noticeToEdit.setGroupName(null); // O ""
             }
-        });
+
+            String oldImageUrl = (noticeToEdit.getImageUrl() != null) ? noticeToEdit.getImageUrl() : null;
+
+            viewModel.updateNotice(noticeToEdit, selectedImageUri, oldImageUrl).observe(getViewLifecycleOwner(), resource -> {
+                handleSaveResponse(resource, "Aviso actualizado correctamente");
+            });
+
+        } else {
+            // --- LÓGICA DE CREACIÓN (la que ya tenías) ---
+            Notice notice = new Notice(teacherId, title, description, category, scope);
+            notice.setTeacherName(teacherName);
+
+            if (scope.equals(Constants.SCOPE_GROUP)) {
+                if (teacherGroupName == null || teacherGroupName.isEmpty()) {
+                    Toast.makeText(requireContext(), "No tienes un grupo asignado para publicar", Toast.LENGTH_SHORT).show();
+                    binding.progressBar.setVisibility(View.GONE);
+                    binding.btnPublish.setEnabled(true);
+                    return;
+                }
+                notice.setGroupName(teacherGroupName);
+            }
+
+            Calendar calendar = Calendar.getInstance();
+            calendar.add(Calendar.DAY_OF_YEAR, 7);
+            notice.setValidUntil(calendar.getTime());
+
+            viewModel.publishNotice(notice, selectedImageUri).observe(getViewLifecycleOwner(), resource -> {
+                handleSaveResponse(resource, "Aviso publicado correctamente");
+            });
+        }
     }
 
-    // --- LÓGICA DE CATEGORÍA MODIFICADA (acepta String) ---
+    // --- INICIO DE CÓDIGO AÑADIDO ---
+    // Helper para manejar la respuesta del ViewModel (crear o actualizar)
+    private void handleSaveResponse(Resource<String> resource, String successMessage) {
+        if (resource != null) {
+            switch (resource.getStatus()) {
+                case LOADING:
+                    break;
+                case SUCCESS:
+                    binding.progressBar.setVisibility(View.GONE);
+                    Toast.makeText(requireContext(),
+                            successMessage,
+                            Toast.LENGTH_SHORT).show();
+                    Navigation.findNavController(binding.getRoot()).navigateUp();
+                    break;
+                case ERROR:
+                    binding.progressBar.setVisibility(View.GONE);
+                    binding.btnPublish.setEnabled(true);
+                    Toast.makeText(requireContext(), resource.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                    break;
+            }
+        }
+    }
+
+    // Helper para mapear constante a string (para poblar UI)
+    private String getCategoryString(String constant) {
+        switch (constant) {
+            case Constants.NOTICE_TAREA: return categories[0];
+            case Constants.NOTICE_EVENTO: return categories[1];
+            case Constants.NOTICE_RECORDATORIO: return categories[2];
+            case Constants.NOTICE_URGENTE: return categories[3];
+            default: return categories[2]; // Recordatorio por defecto
+        }
+    }
+
+    // Helper para mapear constante a string (para poblar UI)
+    private String getScopeString(String constant) {
+        if (Constants.SCOPE_GROUP.equals(constant)) {
+            return scopes[0]; // "Mi grupo"
+        } else {
+            return scopes[1]; // "Toda la escuela"
+        }
+    }
+    // --- FIN DE CÓDIGO AÑADIDO ---
+
+    // Helper para mapear string a constante (para guardar en DB)
     private String getCategoryConstant(String categoryText) {
         if (categoryText.equals(categories[0])) { // Tarea
             return Constants.NOTICE_TAREA;

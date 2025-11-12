@@ -21,7 +21,9 @@ public class NoticeListFragment extends Fragment {
     private ParentViewModel viewModel;
     private NoticeAdapter adapter;
     private PreferencesManager preferencesManager;
+
     private String studentGroupName;
+    private String studentName;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
@@ -37,11 +39,31 @@ public class NoticeListFragment extends Fragment {
         viewModel = new ViewModelProvider(this).get(ParentViewModel.class);
         preferencesManager = new PreferencesManager(requireContext());
 
+        // --- INICIO DE CÓDIGO MODIFICADO ---
+        if (getArguments() != null && getArguments().getString("groupName") != null) {
+            // Opción 1: Venimos desde los accesos rápidos (Home)
+            studentGroupName = getArguments().getString("groupName");
+            studentName = getArguments().getString("studentName");
+        } else {
+            // Opción 2: Venimos desde la barra de navegación inferior
+            studentGroupName = preferencesManager.getCurrentGroupName();
+            studentName = preferencesManager.getCurrentStudentName();
+        }
+
+        if (studentGroupName == null || studentName == null) {
+            Toast.makeText(requireContext(), "Error: No se pudo cargar el grupo", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        binding.toolbar.setTitle("Avisos de " + studentName);
+        // --- FIN DE CÓDIGO MODIFICADO ---
+
         setupRecyclerView();
-        loadStudentGroup();
+        loadNotices(); // Llamar a cargar avisos directamente
     }
 
     private void setupRecyclerView() {
+        // ... (sin cambios) ...
         adapter = new NoticeAdapter(preferencesManager.getUserId());
         binding.recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         binding.recyclerView.setAdapter(adapter);
@@ -55,42 +77,17 @@ public class NoticeListFragment extends Fragment {
         });
     }
 
-    // --- LÓGICA DE ESTADO VACÍO MODIFICADA ---
-    private void loadStudentGroup() {
-        String parentId = preferencesManager.getUserId();
-
-        binding.progressBar.setVisibility(View.VISIBLE);
-        binding.recyclerView.setVisibility(View.GONE);
-        binding.emptyView.getRoot().setVisibility(View.GONE);
-
-        viewModel.getStudentsByParent(parentId).observe(getViewLifecycleOwner(), resource -> {
-            if (binding == null) return;
-            if (resource != null && resource.getStatus() ==
-                    com.example.kinderconnect.utils.Resource.Status.SUCCESS) {
-
-                if (resource.getData() != null && !resource.getData().isEmpty()) {
-                    studentGroupName = resource.getData().get(0).getGroupName();
-                    loadNotices();
-                } else {
-                    // No tiene alumnos
-                    binding.progressBar.setVisibility(View.GONE);
-                    binding.emptyView.getRoot().setVisibility(View.VISIBLE);
-                    binding.emptyView.ivEmptyIcon.setImageResource(R.drawable.ic_people);
-                    binding.emptyView.tvEmptyTitle.setText("Sin alumnos");
-                    binding.emptyView.tvEmptySubtitle.setText("No hay alumnos asignados para ver avisos.");
-                }
-            } else if (resource != null) {
-                // Error cargando alumno
-                binding.progressBar.setVisibility(View.GONE);
-                binding.emptyView.getRoot().setVisibility(View.VISIBLE);
-                binding.emptyView.ivEmptyIcon.setImageResource(R.drawable.ic_close);
-                binding.emptyView.tvEmptyTitle.setText("Error");
-                binding.emptyView.tvEmptySubtitle.setText(resource.getMessage());
-            }
-        });
-    }
-
     private void loadNotices() {
+        // ... (sin cambios) ...
+        if (studentGroupName == null) {
+            binding.progressBar.setVisibility(View.GONE);
+            binding.emptyView.getRoot().setVisibility(View.VISIBLE);
+            binding.emptyView.ivEmptyIcon.setImageResource(R.drawable.ic_close);
+            binding.emptyView.tvEmptyTitle.setText("Error");
+            binding.emptyView.tvEmptySubtitle.setText("No se especificó un grupo.");
+            return;
+        }
+
         viewModel.getNoticesByGroup(studentGroupName).observe(getViewLifecycleOwner(), resource -> {
             if (binding == null) return;
             if (resource != null) {

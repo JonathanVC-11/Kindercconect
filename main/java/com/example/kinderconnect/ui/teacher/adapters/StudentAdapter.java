@@ -15,6 +15,10 @@ import com.example.kinderconnect.utils.DateUtils;
 public class StudentAdapter extends ListAdapter<Student, StudentAdapter.StudentViewHolder> {
     private OnItemClickListener listener;
 
+    // --- INICIO DE CÓDIGO AÑADIDO ---
+    private OnItemLongClickListener longClickListener;
+    // --- FIN DE CÓDIGO AÑADIDO ---
+
     public StudentAdapter() {
         super(DIFF_CALLBACK);
     }
@@ -53,12 +57,25 @@ public class StudentAdapter extends ListAdapter<Student, StudentAdapter.StudentV
             super(binding.getRoot());
             this.binding = binding;
 
+            // Clic normal
             binding.getRoot().setOnClickListener(v -> {
                 int position = getAdapterPosition();
                 if (position != RecyclerView.NO_POSITION && listener != null) {
                     listener.onItemClick(getItem(position));
                 }
             });
+
+            // --- INICIO DE CÓDIGO AÑADIDO ---
+            // Clic largo (pulsación larga)
+            binding.getRoot().setOnLongClickListener(v -> {
+                int position = getAdapterPosition();
+                if (position != RecyclerView.NO_POSITION && longClickListener != null) {
+                    longClickListener.onItemLongClick(getItem(position));
+                    return true; // Importante: consumir el evento
+                }
+                return false;
+            });
+            // --- FIN DE CÓDIGO AÑADIDO ---
         }
 
         void bind(Student student) {
@@ -69,13 +86,21 @@ public class StudentAdapter extends ListAdapter<Student, StudentAdapter.StudentV
                 binding.tvBirthDate.setText(DateUtils.formatDate(student.getBirthDate()));
             }
 
+            // --- INICIO DE CÓDIGO MODIFICADO ---
+            // Añadido un placeholder por defecto si no hay foto
             if (student.getPhotoUrl() != null && !student.getPhotoUrl().isEmpty()) {
                 Glide.with(binding.getRoot().getContext())
                         .load(student.getPhotoUrl())
                         .placeholder(R.drawable.ic_logo)
                         .circleCrop()
                         .into(binding.ivStudentPhoto);
+            } else {
+                Glide.with(binding.getRoot().getContext())
+                        .load(R.drawable.ic_logo) // Imagen por defecto
+                        .circleCrop()
+                        .into(binding.ivStudentPhoto);
             }
+            // --- FIN DE CÓDIGO MODIFICADO ---
         }
     }
 
@@ -86,4 +111,14 @@ public class StudentAdapter extends ListAdapter<Student, StudentAdapter.StudentV
     public void setOnItemClickListener(OnItemClickListener listener) {
         this.listener = listener;
     }
+
+    // --- INICIO DE CÓDIGO AÑADIDO ---
+    public interface OnItemLongClickListener {
+        void onItemLongClick(Student student);
+    }
+
+    public void setOnItemLongClickListener(OnItemLongClickListener listener) {
+        this.longClickListener = listener;
+    }
+    // --- FIN DE CÓDIGO AÑADIDO ---
 }

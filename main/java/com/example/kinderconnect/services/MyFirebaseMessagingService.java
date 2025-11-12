@@ -8,6 +8,10 @@ import androidx.core.app.NotificationCompat;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 import com.example.kinderconnect.R;
+// --- INICIO DE CÓDIGO AÑADIDO ---
+import com.example.kinderconnect.data.local.PreferencesManager;
+import com.example.kinderconnect.data.repository.AuthRepository;
+// --- FIN DE CÓDIGO AÑADIDO ---
 import com.example.kinderconnect.ui.auth.LoginActivity;
 import com.example.kinderconnect.utils.Constants;
 import com.example.kinderconnect.utils.NotificationHelper;
@@ -45,6 +49,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     }
 
     private void handleDataMessage(RemoteMessage remoteMessage) {
+        // ... (sin cambios) ...
         String type = remoteMessage.getData().get("type");
         String title = remoteMessage.getData().get("title");
         String body = remoteMessage.getData().get("body");
@@ -68,12 +73,14 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     }
 
     private void handleNotificationMessage(RemoteMessage remoteMessage) {
+        // ... (sin cambios) ...
         String title = remoteMessage.getNotification().getTitle();
         String body = remoteMessage.getNotification().getBody();
         showDefaultNotification(title, body);
     }
 
     private void showAttendanceNotification(String title, String body) {
+        // ... (sin cambios) ...
         Intent intent = new Intent(this, LoginActivity.class);
         NotificationHelper.showAttendanceNotification(
                 this,
@@ -84,6 +91,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     }
 
     private void showNoticeNotification(String title, String body) {
+        // ... (sin cambios) ...
         Intent intent = new Intent(this, LoginActivity.class);
         NotificationHelper.showNoticeNotification(
                 this,
@@ -94,6 +102,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     }
 
     private void showGradeNotification(String title, String body) {
+        // ... (sin cambios) ...
         Intent intent = new Intent(this, LoginActivity.class);
         NotificationHelper.showNoticeNotification(
                 this,
@@ -104,6 +113,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     }
 
     private void showDefaultNotification(String title, String body) {
+        // ... (sin cambios) ...
         Intent intent = new Intent(this, LoginActivity.class);
         NotificationHelper.showNoticeNotification(
                 this,
@@ -114,8 +124,24 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     }
 
     private void sendTokenToServer(String token) {
-        // Aquí puedes implementar la lógica para enviar el token al servidor
-        // Por ejemplo, guardarlo en Firestore asociado al usuario actual
-        Log.d(TAG, "Sending token to server: " + token);
+        // --- INICIO DE CÓDIGO MODIFICADO ---
+        // Aquí implementamos la lógica para actualizar el token si cambia
+        // mientras el usuario tiene la sesión iniciada.
+
+        // 1. Obtener el UID del usuario logueado
+        PreferencesManager preferencesManager = new PreferencesManager(this);
+        String currentUserId = preferencesManager.getUserId();
+
+        if (currentUserId != null) {
+            // 2. Actualizar el token en Firestore
+            Log.d(TAG, "Usuario logueado, actualizando token en Firestore...");
+            AuthRepository authRepository = new AuthRepository();
+            authRepository.updateUserTokenFireAndForget(currentUserId, token);
+        } else {
+            Log.w(TAG, "Nuevo token generado, pero no hay usuario logueado. Se guardará al iniciar sesión.");
+            // Opcional: podrías guardar el token en SharedPreferences aquí
+            // para que se suba en el próximo login.
+        }
+        // --- FIN DE CÓDIGO MODIFICADO ---
     }
 }

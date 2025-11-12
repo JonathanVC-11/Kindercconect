@@ -89,12 +89,20 @@ public class NoticeDetailFragment extends Fragment {
 
         // Cargar la imagen si existe
         if (notice.getImageUrl() != null && !notice.getImageUrl().isEmpty()) {
-            binding.ivNoticeImage.setVisibility(View.VISIBLE);
+
+            // --- INICIO DE LA CORRECCIÓN ---
+            // Mostramos la CardView que contiene la imagen
+            binding.cardImage.setVisibility(View.VISIBLE);
+            // --- FIN DE LA CORRECCIÓN ---
+
             Glide.with(requireContext())
                     .load(notice.getImageUrl())
                     .into(binding.ivNoticeImage);
         } else {
-            binding.ivNoticeImage.setVisibility(View.GONE);
+            // --- INICIO DE LA CORRECCIÓN ---
+            // Ocultamos la CardView si no hay imagen
+            binding.cardImage.setVisibility(View.GONE);
+            // --- FIN DE LA CORRECCIÓN ---
         }
     }
 

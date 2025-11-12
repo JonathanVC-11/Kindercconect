@@ -12,7 +12,7 @@ import com.example.kinderconnect.R;
 import com.example.kinderconnect.databinding.ItemGalleryBinding;
 import com.example.kinderconnect.data.model.GalleryItem;
 import com.example.kinderconnect.utils.Constants;
-import com.example.kinderconnect.utils.DateUtils; // <-- AÑADIDO
+import com.example.kinderconnect.utils.DateUtils;
 
 public class GalleryAdapter extends ListAdapter<GalleryItem, GalleryAdapter.GalleryViewHolder> {
     private OnItemClickListener listener;
@@ -79,43 +79,46 @@ public class GalleryAdapter extends ListAdapter<GalleryItem, GalleryAdapter.Gall
         // --- ¡¡LÓGICA 'BIND' MODIFICADA!! ---
         void bind(GalleryItem item) {
 
-            // Condición 1: Es un video
             boolean isVideo = item.getMediaType().equals(Constants.MEDIA_VIDEO);
-            // Condición 2: El thumbnail no existe o está vacío
-            boolean noThumbnail = item.getThumbnailUrl() == null || item.getThumbnailUrl().isEmpty();
 
-            if (isVideo || noThumbnail) {
-                // Es un VIDEO o es una IMAGEN SIN THUMBNAIL
-                binding.ivPlayIcon.setVisibility(isVideo ? android.view.View.VISIBLE : android.view.View.GONE);
+            if (isVideo) {
+                // --- INICIO DE LA CORRECCIÓN ---
+                // Es un VIDEO
+                binding.ivPlayIcon.setVisibility(View.VISIBLE);
 
-                // Cargar un placeholder
+                // Pedimos a Glide que cargue la URL del video.
+                // Glide tomará un fotograma como miniatura.
                 Glide.with(binding.getRoot().getContext())
-                        .load(R.drawable.ic_logo)
+                        .load(item.getMediaUrl()) // Cargar la URL del video
                         .placeholder(R.drawable.ic_logo)
                         .centerCrop()
                         .into(binding.ivThumbnail);
+                // --- FIN DE LA CORRECCIÓN ---
 
             } else {
-                // Es una IMAGEN y SÍ tiene un thumbnail
-                binding.ivPlayIcon.setVisibility(android.view.View.GONE);
+                // Es una IMAGEN
+                binding.ivPlayIcon.setVisibility(View.GONE);
 
-                // Cargar la miniatura comprimida (thumbnailUrl)
+                // Usar el thumbnail si existe, sino la imagen original
+                String urlToLoad = item.getThumbnailUrl();
+                if (urlToLoad == null || urlToLoad.isEmpty()) {
+                    urlToLoad = item.getMediaUrl();
+                }
+
                 Glide.with(binding.getRoot().getContext())
-                        .load(item.getThumbnailUrl())
+                        .load(urlToLoad)
                         .placeholder(R.drawable.ic_logo)
                         .centerCrop()
                         .into(binding.ivThumbnail);
             }
 
-            // --- AÑADIDO: Lógica para la fecha ---
+            // Lógica para la fecha (esta ya la tenías bien)
             if (item.getUploadedAt() != null) {
-                // Usamos el método de tiempo relativo que ya tienes en DateUtils
                 binding.tvDate.setText(DateUtils.getRelativeTimeString(item.getUploadedAt()));
                 binding.tvDate.setVisibility(View.VISIBLE);
             } else {
                 binding.tvDate.setVisibility(View.GONE);
             }
-            // ------------------------------------
         }
     }
 

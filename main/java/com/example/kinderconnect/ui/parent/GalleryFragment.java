@@ -1,7 +1,7 @@
 package com.example.kinderconnect.ui.parent;
 
-import android.content.Intent; // <-- AÑADIDO
-import android.net.Uri; // <-- AÑADIDO
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,18 +14,20 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import com.example.kinderconnect.R;
 import com.example.kinderconnect.databinding.FragmentGalleryBinding;
-import com.example.kinderconnect.data.local.PreferencesManager;
-import com.example.kinderconnect.data.model.GalleryItem; // <-- AÑADIDO
+import com.example.kinderconnect.data.local.PreferencesManager; // <-- AÑADIDO
+import com.example.kinderconnect.data.model.GalleryItem;
 import com.example.kinderconnect.ui.adapters.GalleryAdapter;
-import com.example.kinderconnect.utils.Constants; // <-- AÑADIDO
+import com.example.kinderconnect.utils.Constants;
 import com.example.kinderconnect.utils.Resource;
 
 public class GalleryFragment extends Fragment {
     private FragmentGalleryBinding binding;
     private ParentViewModel viewModel;
-    private PreferencesManager preferencesManager;
+    private PreferencesManager preferencesManager; // <-- AÑADIDO
     private GalleryAdapter adapter;
+
     private String studentGroupName;
+    private String studentName;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
@@ -39,36 +41,47 @@ public class GalleryFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         viewModel = new ViewModelProvider(this).get(ParentViewModel.class);
-        preferencesManager = new PreferencesManager(requireContext());
+        preferencesManager = new PreferencesManager(requireContext()); // <-- AÑADIDO
+
+        // --- INICIO DE CÓDIGO MODIFICADO ---
+        if (getArguments() != null && getArguments().getString("groupName") != null) {
+            // Opción 1: Venimos desde los accesos rápidos (Home)
+            studentGroupName = getArguments().getString("groupName");
+            studentName = getArguments().getString("studentName");
+        } else {
+            // Opción 2: Venimos desde la barra de navegación (si se añadiera)
+            studentGroupName = preferencesManager.getCurrentGroupName();
+            studentName = preferencesManager.getCurrentStudentName();
+        }
+
+        if (studentGroupName == null || studentName == null) {
+            Toast.makeText(requireContext(), "Error: No se pudo cargar el grupo", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        // --- FIN DE CÓDIGO MODIFICADO ---
 
         setupRecyclerView();
-        loadStudentAndGallery();
+        loadGallery(); // Llamar a cargar galería directamente
     }
 
     private void setupRecyclerView() {
+        // ... (sin cambios) ...
         adapter = new GalleryAdapter();
         binding.recyclerView.setLayoutManager(new GridLayoutManager(requireContext(), 3));
         binding.recyclerView.setAdapter(adapter);
 
-        // --- CLICK LISTENER MODIFICADO ---
         adapter.setOnItemClickListener(item -> {
-            // Antes: Toast.makeText(requireContext(), "Ver: " + (item.getDescription() != null ? item.getDescription() : "Media"), Toast.LENGTH_SHORT).show();
-            openMediaViewer(item); // Ahora llama al visor
+            openMediaViewer(item);
         });
-        // -----------------------------------
     }
 
-    // --- NUEVO MÉTODO AÑADIDO ---
-    /**
-     * Abre un visor nativo (Galería, Video Player) para el item seleccionado.
-     */
     private void openMediaViewer(GalleryItem item) {
+        // ... (sin cambios) ...
         if (item == null || item.getMediaUrl() == null || item.getMediaUrl().isEmpty()) {
             Toast.makeText(requireContext(), "No se pudo encontrar el archivo", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Usamos la URL original (mediaUrl), no el thumbnail
         Uri mediaUri = Uri.parse(item.getMediaUrl());
         Intent intent = new Intent(Intent.ACTION_VIEW);
 
@@ -88,56 +101,9 @@ public class GalleryFragment extends Fragment {
             Toast.makeText(requireContext(), "No hay ninguna aplicación para abrir este archivo", Toast.LENGTH_SHORT).show();
         }
     }
-    // ----------------------------
-
-    private void loadStudentAndGallery() {
-        String parentId = preferencesManager.getUserId();
-        if (parentId == null) {
-            binding.progressBar.setVisibility(View.GONE);
-            binding.emptyView.getRoot().setVisibility(View.VISIBLE);
-            binding.emptyView.ivEmptyIcon.setImageResource(R.drawable.ic_person);
-            binding.emptyView.tvEmptyTitle.setText("Error de Usuario");
-            binding.emptyView.tvEmptySubtitle.setText("No se pudo identificar al usuario.");
-            return;
-        }
-
-        binding.progressBar.setVisibility(View.VISIBLE);
-        binding.recyclerView.setVisibility(View.GONE);
-        binding.emptyView.getRoot().setVisibility(View.GONE);
-
-        viewModel.getStudentsByParent(parentId).observe(getViewLifecycleOwner(), resource -> {
-            if (!isAdded() || binding == null) return;
-
-            if (resource != null && resource.getStatus() == Resource.Status.SUCCESS) {
-                if (resource.getData() != null && !resource.getData().isEmpty()) {
-                    studentGroupName = resource.getData().get(0).getGroupName();
-                    if (studentGroupName != null && !studentGroupName.isEmpty()) {
-                        loadGallery();
-                    } else {
-                        binding.progressBar.setVisibility(View.GONE);
-                        binding.emptyView.getRoot().setVisibility(View.VISIBLE);
-                        binding.emptyView.ivEmptyIcon.setImageResource(R.drawable.ic_people);
-                        binding.emptyView.tvEmptyTitle.setText("Sin grupo");
-                        binding.emptyView.tvEmptySubtitle.setText("El alumno no tiene un grupo asignado.");
-                    }
-                } else {
-                    binding.progressBar.setVisibility(View.GONE);
-                    binding.emptyView.getRoot().setVisibility(View.VISIBLE);
-                    binding.emptyView.ivEmptyIcon.setImageResource(R.drawable.ic_people);
-                    binding.emptyView.tvEmptyTitle.setText("Sin alumnos");
-                    binding.emptyView.tvEmptySubtitle.setText("No hay alumnos asignados a esta cuenta.");
-                }
-            } else if (resource != null && resource.getStatus() == Resource.Status.ERROR) {
-                binding.progressBar.setVisibility(View.GONE);
-                binding.emptyView.getRoot().setVisibility(View.VISIBLE);
-                binding.emptyView.ivEmptyIcon.setImageResource(R.drawable.ic_close);
-                binding.emptyView.tvEmptyTitle.setText("Error");
-                binding.emptyView.tvEmptySubtitle.setText(resource.getMessage());
-            }
-        });
-    }
 
     private void loadGallery() {
+        // ... (sin cambios) ...
         if (studentGroupName == null) {
             binding.progressBar.setVisibility(View.GONE);
             binding.emptyView.getRoot().setVisibility(View.VISIBLE);
@@ -149,6 +115,7 @@ public class GalleryFragment extends Fragment {
 
         binding.recyclerView.setVisibility(View.GONE);
         binding.emptyView.getRoot().setVisibility(View.GONE);
+        binding.progressBar.setVisibility(View.VISIBLE);
 
 
         viewModel.getGalleryByGroup(studentGroupName).observe(getViewLifecycleOwner(), resource -> {

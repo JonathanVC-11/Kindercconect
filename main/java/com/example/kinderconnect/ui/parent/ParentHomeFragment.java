@@ -1,10 +1,11 @@
 package com.example.kinderconnect.ui.parent;
 
 import android.os.Bundle;
-import android.util.Log; // <-- AÑADIDO
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -16,14 +17,20 @@ import com.example.kinderconnect.databinding.FragmentParentHomeBinding;
 import com.example.kinderconnect.data.local.PreferencesManager;
 import com.example.kinderconnect.data.model.Student;
 import com.example.kinderconnect.utils.DateUtils;
-import com.google.firebase.messaging.FirebaseMessaging; // <-- AÑADIDO
+import com.google.firebase.messaging.FirebaseMessaging;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class ParentHomeFragment extends Fragment {
     private FragmentParentHomeBinding binding;
     private ParentViewModel viewModel;
-    private PreferencesManager preferencesManager;
+    private PreferencesManager preferencesManager; // Lo mantenemos para el ID de padre
+
+    private List<Student> studentList;
     private Student currentStudent;
-    private static final String TAG = "ParentHomeFragment"; // <-- AÑADIDO
+
+    private static final String TAG = "ParentHomeFragment";
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
@@ -44,65 +51,148 @@ public class ParentHomeFragment extends Fragment {
     }
 
     private void setupListeners() {
-        binding.cardGrades.setOnClickListener(v ->
-                Navigation.findNavController(v).navigate(R.id.gradeViewFragment));
+        // Los listeners de los accesos rápidos están bien como los dejamos
+        // (pasando argumentos)
+        binding.cardGrades.setOnClickListener(v -> {
+            if (currentStudent == null) return;
+            Bundle args = new Bundle();
+            args.putString("studentId", currentStudent.getStudentId());
+            args.putString("studentName", currentStudent.getFullName());
+            Navigation.findNavController(v).navigate(R.id.gradeViewFragment, args);
+        });
 
-        binding.cardNotices.setOnClickListener(v ->
-                Navigation.findNavController(v).navigate(R.id.noticeListFragment));
+        binding.cardNotices.setOnClickListener(v -> {
+            if (currentStudent == null) return;
+            Bundle args = new Bundle();
+            args.putString("groupName", currentStudent.getGroupName());
+            args.putString("studentName", currentStudent.getFullName());
+            Navigation.findNavController(v).navigate(R.id.noticeListFragment, args);
+        });
 
-        binding.cardGallery.setOnClickListener(v ->
-                Navigation.findNavController(v).navigate(R.id.parentGalleryFragment));
+        binding.cardGallery.setOnClickListener(v -> {
+            if (currentStudent == null) return;
+            Bundle args = new Bundle();
+            args.putString("groupName", currentStudent.getGroupName());
+            args.putString("studentName", currentStudent.getFullName());
+            Navigation.findNavController(v).navigate(R.id.parentGalleryFragment, args);
+        });
     }
 
     private void loadStudentData() {
         String parentId = preferencesManager.getUserId();
-
         binding.progressBar.setVisibility(View.VISIBLE);
 
         viewModel.getStudentsByParent(parentId).observe(getViewLifecycleOwner(), resource -> {
             if (resource != null && resource.getStatus() ==
                     com.example.kinderconnect.utils.Resource.Status.SUCCESS) {
-
                 binding.progressBar.setVisibility(View.GONE);
 
                 if (resource.getData() != null && !resource.getData().isEmpty()) {
-                    currentStudent = resource.getData().get(0);
-                    displayStudentInfo();
-                    loadAttendanceStats();
-                    loadNoticesCount();
-                    // --- AÑADIR LLAMADA A SUSCRIPCIÓN ---
-                    subscribeToTopics(currentStudent.getGroupName());
+                    this.studentList = resource.getData();
+
+                    // --- INICIO DE CÓDIGO MODIFICADO ---
+                    // Intentar cargar el último alumno guardado
+                    String lastStudentId = preferencesManager.getCurrentStudentId();
+                    this.currentStudent = findStudentById(lastStudentId);
+
+                    // Si no se encontró (o es la primera vez), seleccionar el primero
+                    if (this.currentStudent == null) {
+                        this.currentStudent = this.studentList.get(0);
+                    }
+                    // --- FIN DE CÓDIGO MODIFICADO ---
+
+                    setupStudentSelector();
+                    updateDashboardForStudent();
                 }
             }
         });
     }
 
-    // --- NUEVO MÉTODO AÑADIDO ---
+    // --- INICIO DE CÓDIGO AÑADIDO ---
+    private Student findStudentById(String studentId) {
+        if (studentId == null || studentList == null) {
+            return null;
+        }
+        for (Student s : studentList) {
+            if (s.getStudentId().equals(studentId)) {
+                return s;
+            }
+        }
+        return null;
+    }
+    // --- FIN DE CÓDIGO AÑADIDO ---
+
+    private void setupStudentSelector() {
+        if (studentList == null || studentList.size() <= 1) {
+            binding.tilStudentSelector.setVisibility(View.GONE);
+            return;
+        }
+
+        List<String> studentNames = studentList.stream()
+                .map(Student::getFullName)
+                .collect(Collectors.toList());
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                requireContext(),
+                android.R.layout.simple_dropdown_item_1line,
+                studentNames
+        );
+        binding.actStudentSelector.setAdapter(adapter);
+
+        // Poner el valor actual
+        binding.actStudentSelector.setText(currentStudent.getFullName(), false);
+        binding.tilStudentSelector.setVisibility(View.VISIBLE);
+
+        binding.actStudentSelector.setOnItemClickListener((parent, view, position, id) -> {
+            this.currentStudent = studentList.get(position);
+            updateDashboardForStudent();
+        });
+    }
+
+    private void updateDashboardForStudent() {
+        if (currentStudent == null) return;
+
+        // --- INICIO DE CÓDIGO AÑADIDO ---
+        // **LA CLAVE ESTÁ AQUÍ**: Guardamos el alumno seleccionado
+        preferencesManager.saveCurrentStudent(
+                currentStudent.getStudentId(),
+                currentStudent.getFullName(),
+                currentStudent.getGroupName()
+        );
+        // --- FIN DE CÓDIGO AÑADIDO ---
+
+        displayStudentInfo();
+        loadAttendanceStats();
+        loadNoticesCount();
+        subscribeToTopics(currentStudent.getGroupName());
+    }
+
+    // ... (subscribeToTopics, displayStudentInfo, loadAttendanceStats, loadNoticesCount
+    //  y onDestroyView no cambian. Ya los modificamos en el paso anterior.) ...
+
     private void subscribeToTopics(String groupName) {
-        // 1. Suscribirse al tema general de la escuela
+        // ... (código existente) ...
         FirebaseMessaging.getInstance().subscribeToTopic("notices_SCHOOL")
                 .addOnSuccessListener(aVoid -> Log.d(TAG, "Suscrito al tema: notices_SCHOOL"))
                 .addOnFailureListener(e -> Log.e(TAG, "Error al suscribir a notices_SCHOOL", e));
 
-        // 2. Suscribirse al tema específico del grupo
         if (groupName != null && !groupName.isEmpty()) {
-            // Limpiar el nombre del grupo para que sea un tema de FCM válido
             String cleanGroupName = groupName.replaceAll("[^a-zA-Z0-9]", "_");
-            String groupTopic = "notices_GROUP_" + cleanGroupName; // Ej: "notices_GROUP_Grupo_A"
+            String groupTopic = "notices_GROUP_" + cleanGroupName;
 
             FirebaseMessaging.getInstance().subscribeToTopic(groupTopic)
                     .addOnSuccessListener(aVoid -> Log.d(TAG, "Suscrito al tema: " + groupTopic))
                     .addOnFailureListener(e -> Log.e(TAG, "Error al suscribir a " + groupTopic, e));
         }
 
-        // 3. Suscripción al tema del autobús (esto ya lo tenías, pero lo confirmamos aquí)
         FirebaseMessaging.getInstance().subscribeToTopic("bus_route")
                 .addOnSuccessListener(aVoid -> Log.d(TAG, "Suscrito al tema: bus_route"))
                 .addOnFailureListener(e -> Log.e(TAG, "Error al suscribir a bus_route", e));
     }
-    // --- FIN DE NUEVO MÉTODO ---
 
     private void displayStudentInfo() {
+        if (currentStudent == null) return;
+
         binding.tvStudentName.setText(currentStudent.getFullName());
         binding.tvGroupName.setText("Grupo: " + currentStudent.getGroupName());
 
@@ -112,11 +202,18 @@ public class ParentHomeFragment extends Fragment {
                     .placeholder(R.drawable.ic_logo)
                     .circleCrop()
                     .into(binding.ivStudentPhoto);
+        } else {
+            Glide.with(this)
+                    .load(R.drawable.ic_logo)
+                    .circleCrop()
+                    .into(binding.ivStudentPhoto);
         }
     }
 
     private void loadAttendanceStats() {
         if (currentStudent == null) return;
+
+        binding.tvAttendancePercentage.setText("0%");
 
         viewModel.getAttendanceByStudent(
                 currentStudent.getStudentId(),
@@ -146,6 +243,8 @@ public class ParentHomeFragment extends Fragment {
     private void loadNoticesCount() {
         if (currentStudent == null) return;
 
+        binding.tvUnreadNotices.setText("0");
+
         viewModel.getNoticesByGroup(currentStudent.getGroupName())
                 .observe(getViewLifecycleOwner(), resource -> {
                     if (resource != null && resource.getStatus() ==
@@ -160,7 +259,6 @@ public class ParentHomeFragment extends Fragment {
                                     unreadCount++;
                                 }
                             }
-
                             binding.tvUnreadNotices.setText(String.valueOf(unreadCount));
                         }
                     }

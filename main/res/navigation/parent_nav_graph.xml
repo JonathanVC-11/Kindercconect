@@ -15,7 +15,14 @@
         android:id="@+id/gradeViewFragment"
         android:name="com.example.kinderconnect.ui.parent.GradeViewFragment"
         android:label="Calificaciones"
-        tools:layout="@layout/fragment_grade_view" />
+        tools:layout="@layout/fragment_grade_view" >
+        <argument
+            android:name="studentId"
+            app:argType="string" />
+        <argument
+            android:name="studentName"
+            app:argType="string" />
+    </fragment>
 
     <fragment
         android:id="@+id/noticeListFragment"
@@ -25,6 +32,12 @@
         <action
             android:id="@+id/action_notices_to_detail"
             app:destination="@id/noticeDetailFragment" />
+        <argument
+            android:name="groupName"
+            app:argType="string" />
+        <argument
+            android:name="studentName"
+            app:argType="string" />
     </fragment>
 
     <fragment
@@ -41,7 +54,14 @@
         android:id="@+id/parentGalleryFragment"
         android:name="com.example.kinderconnect.ui.parent.GalleryFragment"
         android:label="Galería"
-        tools:layout="@layout/fragment_gallery" />
+        tools:layout="@layout/fragment_gallery" >
+        <argument
+            android:name="groupName"
+            app:argType="string" />
+        <argument
+            android:name="studentName"
+            app:argType="string" />
+    </fragment>
 
     <fragment
         android:id="@+id/busRouteFragment"

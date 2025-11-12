@@ -10,25 +10,28 @@ public class User {
     private String email;
     private String fullName;
     private String userType; // "TEACHER" or "PARENT"
-    private String phone;    // <-- Este campo
+    private String phone;
     private String photoUrl;
     private String schoolId;
     @ServerTimestamp
     private Date createdAt;
     private boolean isActive;
 
+    // --- INICIO DE CÓDIGO AÑADIDO ---
+    private String fcmToken;
+    // --- FIN DE CÓDIGO AÑADIDO ---
+
     public User() {
         // Constructor vacío requerido por Firebase
     }
 
     // --- CONSTRUCTOR CORREGIDO ---
-    // Añadimos 'String phone' como parámetro
     public User(String uid, String email, String fullName, String userType, String phone) {
         this.uid = uid;
         this.email = email;
         this.fullName = fullName;
         this.userType = userType;
-        this.phone = phone; // <-- Y lo asignamos aquí
+        this.phone = phone;
         this.isActive = true;
     }
 
@@ -59,4 +62,9 @@ public class User {
 
     public boolean isActive() { return isActive; }
     public void setActive(boolean active) { isActive = active; }
+
+    // --- INICIO DE CÓDIGO AÑADIDO ---
+    public String getFcmToken() { return fcmToken; }
+    public void setFcmToken(String fcmToken) { this.fcmToken = fcmToken; }
+    // --- FIN DE CÓDIGO AÑADIDO ---
 }

@@ -2,6 +2,7 @@ package com.example.kinderconnect.ui.auth;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log; // <-- AÑADIDO
 import android.view.View;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
@@ -13,12 +14,14 @@ import com.example.kinderconnect.ui.teacher.TeacherMainActivity;
 import com.example.kinderconnect.utils.Constants;
 import com.example.kinderconnect.utils.Resource;
 import com.example.kinderconnect.utils.ValidationUtils;
-import com.example.kinderconnect.data.model.User; // <-- AÑADIDO
+import com.example.kinderconnect.data.model.User;
+import com.google.firebase.messaging.FirebaseMessaging; // <-- AÑADIDO
 
 public class LoginActivity extends AppCompatActivity {
     private ActivityLoginBinding binding;
     private AuthViewModel authViewModel;
     private PreferencesManager preferencesManager;
+    private static final String TAG = "LoginActivity"; // <-- AÑADIDO
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,6 +36,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
+        // ... (sin cambios) ...
         binding.btnLogin.setOnClickListener(v -> performLogin());
 
         binding.tvRegister.setOnClickListener(v -> {
@@ -45,6 +49,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void performLogin() {
+        // ... (sin cambios en la validación) ...
         String email = binding.etEmail.getText().toString().trim();
         String password = binding.etPassword.getText().toString().trim();
 
@@ -71,7 +76,7 @@ public class LoginActivity extends AppCompatActivity {
                     case SUCCESS:
                         if (resource.getData() != null) {
                             String uid = resource.getData().getUid();
-                            loadUserData(uid);
+                            loadUserData(uid); // Esto ya estaba
                         }
                         break;
                     case ERROR:
@@ -88,11 +93,18 @@ public class LoginActivity extends AppCompatActivity {
         authViewModel.getUserData(uid).observe(this, resource -> {
             if (resource != null) {
                 switch (resource.getStatus()) {
-                    case LOADING: // Añadido para que el usuario sepa que está cargando
+                    case LOADING:
                         binding.progressBar.setVisibility(View.VISIBLE);
                         break;
                     case SUCCESS:
                         if (resource.getData() != null) {
+
+                            // --- INICIO DE CÓDIGO AÑADIDO ---
+                            // 1. Guardar el token en Firestore
+                            getAndSaveFcmToken(uid);
+                            // --- FIN DE CÓDIGO AÑADIDO ---
+
+                            // 2. Guardar sesión y navegar
                             saveUserSession(resource.getData());
                             navigateToMainScreen(resource.getData().getUserType());
                         }
@@ -108,24 +120,49 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
-    // --- MÉTODO MODIFICADO ---
+    // --- INICIO DE CÓDIGO AÑADIDO ---
+    private void getAndSaveFcmToken(String uid) {
+        FirebaseMessaging.getInstance().getToken()
+                .addOnSuccessListener(token -> {
+                    if (token != null) {
+                        // Enviar token a Firestore
+                        authViewModel.updateUserToken(uid, token).observe(this, resource -> {
+                            // Opcional: manejar la respuesta, pero para el login no es crítico
+                            if (resource.getStatus() == Resource.Status.SUCCESS) {
+                                Log.d(TAG, "FCM Token guardado en Firestore exitosamente.");
+                            } else if (resource.getStatus() == Resource.Status.ERROR) {
+                                Log.e(TAG, "Error al guardar FCM Token: " + resource.getMessage());
+                            }
+                        });
+                    } else {
+                        Log.e(TAG, "No se pudo obtener el FCM Token (es nulo).");
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error al obtener FCM Token", e);
+                });
+    }
+    // --- FIN DE CÓDIGO AÑADIDO ---
+
     private void saveUserSession(User user) {
+        // ... (sin cambios) ...
         preferencesManager.setLoggedIn(true);
         preferencesManager.saveUserId(user.getUid());
         preferencesManager.saveUserType(user.getUserType());
         preferencesManager.saveUserName(user.getFullName());
         preferencesManager.saveUserEmail(user.getEmail());
-        preferencesManager.saveUserPhoto(user.getPhotoUrl()); // <-- AÑADIDO
+        preferencesManager.saveUserPhoto(user.getPhotoUrl());
     }
 
     private void navigateToMainScreen(String userType) {
+        // ... (sin cambios) ...
         Intent intent;
         if (Constants.USER_TYPE_TEACHER.equals(userType)) {
             intent = new Intent(this, TeacherMainActivity.class);
         } else {
             intent = new Intent(this, ParentMainActivity.class);
         }
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK); // Evita volver
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
     }

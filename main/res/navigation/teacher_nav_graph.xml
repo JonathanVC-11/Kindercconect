@@ -35,7 +35,13 @@
         android:id="@+id/addStudentFragment"
         android:name="com.example.kinderconnect.ui.teacher.AddStudentFragment"
         android:label="Agregar Alumno"
-        tools:layout="@layout/fragment_add_student" />
+        tools:layout="@layout/fragment_add_student" >
+        <argument
+            android:name="studentId"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="@null" />
+    </fragment>
 
     <fragment
         android:id="@+id/attendanceFragment"
@@ -67,7 +73,13 @@
         android:id="@+id/publishNoticeFragment"
         android:name="com.example.kinderconnect.ui.teacher.PublishNoticeFragment"
         android:label="Publicar Aviso"
-        tools:layout="@layout/fragment_publish_notice" />
+        tools:layout="@layout/fragment_publish_notice" >
+        <argument
+            android:name="noticeId"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="@null" />
+    </fragment>
 
     <fragment
         android:id="@+id/teacherGalleryFragment"

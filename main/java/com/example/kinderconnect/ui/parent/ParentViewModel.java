@@ -66,6 +66,18 @@ public class ParentViewModel extends ViewModel {
     }
 
     // --- Avisos ---
+
+    // --- INICIO DE CÓDIGO MODIFICADO ---
+    /**
+     * Obtiene una lista combinada de avisos de GRUPO y de ESCUELA para el padre.
+     */
+    public LiveData<Resource<List<Notice>>> getNoticesForParent(String groupName) {
+        // Este método asume que has implementado 'getNoticesForParent'
+        // en tu NoticeRepository, como discutimos.
+        return noticeRepository.getNoticesForParent(groupName);
+    }
+    // --- FIN DE CÓDIGO MODIFICADO ---
+
     public LiveData<Resource<List<Notice>>> getNoticesByGroup(String groupName) {
         return noticeRepository.getNoticesByGroup(groupName);
     }

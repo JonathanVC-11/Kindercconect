@@ -5,6 +5,12 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+// --- INICIO DE IMPORTACIONES AÑADIDAS ---
+import androidx.lifecycle.MediatorLiveData;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+// --- FIN DE IMPORTACIONES AÑADIDAS ---
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.SetOptions;
@@ -114,7 +120,80 @@ public class NoticeRepository {
     // --- FIN DE LÓGICA DE EDICIÓN AÑADIDA ---
 
 
-    // --- INICIO DE MÉTODOS RESTAURADOS ---
+    // --- INICIO DE CÓDIGO MODIFICADO ---
+
+    /**
+     * MÉTODO NUEVO: Combina avisos del grupo y de la escuela para un padre.
+     */
+    public LiveData<Resource<List<Notice>>> getNoticesForParent(String groupName) {
+        // MediatorLiveData nos permite combinar 2 fuentes (queries)
+        MediatorLiveData<Resource<List<Notice>>> result = new MediatorLiveData<>();
+        result.setValue(Resource.loading(null));
+
+        // Listas para guardar los resultados de cada query
+        HashMap<String, Notice> groupNotices = new HashMap<>();
+        HashMap<String, Notice> schoolNotices = new HashMap<>();
+
+        // Fuente 1: Avisos del GRUPO
+        LiveData<Resource<List<Notice>>> groupSource = getNoticesByGroup(groupName);
+
+        // Fuente 2: Avisos de la ESCUELA
+        LiveData<Resource<List<Notice>>> schoolSource = getNoticesByScope(Constants.SCOPE_SCHOOL);
+
+        // Función helper para combinar y emitir
+        Runnable combineResults = () -> {
+            HashMap<String, Notice> allNoticesMap = new HashMap<>();
+            allNoticesMap.putAll(schoolNotices);
+            allNoticesMap.putAll(groupNotices); // Si hay duplicados, el del grupo "gana"
+
+            ArrayList<Notice> combinedList = new ArrayList<>(allNoticesMap.values());
+
+            // Ordenar por fecha, el más nuevo primero
+            Collections.sort(combinedList, (o1, o2) -> {
+                if (o1.getPublishedAt() == null || o2.getPublishedAt() == null) return 0;
+                return o2.getPublishedAt().compareTo(o1.getPublishedAt());
+            });
+
+            result.setValue(Resource.success(combinedList));
+        };
+
+        // Observar la Fuente 1 (Grupo)
+        result.addSource(groupSource, resource -> {
+            if (resource != null) {
+                if (resource.getStatus() == Resource.Status.SUCCESS && resource.getData() != null) {
+                    groupNotices.clear();
+                    for (Notice n : resource.getData()) {
+                        groupNotices.put(n.getNoticeId(), n);
+                    }
+                    combineResults.run();
+                } else if (resource.getStatus() == Resource.Status.ERROR) {
+                    result.setValue(Resource.error(resource.getMessage(), null));
+                }
+            }
+        });
+
+        // Observar la Fuente 2 (Escuela)
+        result.addSource(schoolSource, resource -> {
+            if (resource != null) {
+                if (resource.getStatus() == Resource.Status.SUCCESS && resource.getData() != null) {
+                    schoolNotices.clear();
+                    for (Notice n : resource.getData()) {
+                        schoolNotices.put(n.getNoticeId(), n);
+                    }
+                    combineResults.run();
+                } else if (resource.getStatus() == Resource.Status.ERROR) {
+                    result.setValue(Resource.error(resource.getMessage(), null));
+                }
+            }
+        });
+
+        return result;
+    }
+
+    /**
+     * Este método ahora solo trae avisos por 'groupName'
+     * (Usado por la Maestra y por 'getNoticesForParent')
+     */
     public LiveData<Resource<List<Notice>>> getNoticesByGroup(String groupName) {
         MutableLiveData<Resource<List<Notice>>> result = new MutableLiveData<>();
         result.setValue(Resource.loading(null));
@@ -141,6 +220,38 @@ public class NoticeRepository {
         return result;
     }
 
+    /**
+     * MÉTODO NUEVO: Trae avisos por 'scope' (para los de "SCHOOL")
+     */
+    public LiveData<Resource<List<Notice>>> getNoticesByScope(String scope) {
+        MutableLiveData<Resource<List<Notice>>> result = new MutableLiveData<>();
+        result.setValue(Resource.loading(null));
+
+        firestore.collection(Constants.COLLECTION_NOTICES)
+                .whereEqualTo("scope", scope) // Query por "SCHOOL"
+                .orderBy("publishedAt", Query.Direction.DESCENDING)
+                .addSnapshotListener((value, error) -> {
+                    if (error != null) {
+                        result.setValue(Resource.error("Error: " + error.getMessage(), null));
+                        return;
+                    }
+
+                    if (value != null) {
+                        List<Notice> notices = value.toObjects(Notice.class);
+                        // Asignar IDs
+                        for(int i=0; i < value.getDocuments().size(); i++){
+                            notices.get(i).setNoticeId(value.getDocuments().get(i).getId());
+                        }
+                        result.setValue(Resource.success(notices));
+                    }
+                });
+
+        return result;
+    }
+    // --- FIN DE CÓDIGO MODIFICADO ---
+
+
+    // --- INICIO DE MÉTODOS RESTAURADOS ---
     public LiveData<Resource<List<Notice>>> getAllNotices() {
         MutableLiveData<Resource<List<Notice>>> result = new MutableLiveData<>();
         result.setValue(Resource.loading(null));

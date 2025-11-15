@@ -1,18 +1,18 @@
 package com.example.kinderconnect.ui.teacher;
 
 import android.Manifest;
-import android.content.Intent; // ¡Importante!
-import android.content.pm.PackageManager; // ¡Importante!
-import android.os.Build;     // ¡Importante!
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;      // ¡Importante!
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat; // ¡Importante!
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProvider;
@@ -20,10 +20,16 @@ import androidx.navigation.Navigation;
 import com.example.kinderconnect.R;
 import com.example.kinderconnect.databinding.FragmentTeacherHomeBinding;
 import com.example.kinderconnect.data.local.PreferencesManager;
-import com.example.kinderconnect.services.LocationService; // ¡Importante!
-import com.example.kinderconnect.utils.Constants; // ¡Importante! Para REQUEST_CODE
-import com.example.kinderconnect.utils.PermissionManager; // ¡Importante!
+import com.example.kinderconnect.services.LocationService;
+import com.example.kinderconnect.utils.Constants;
+import com.example.kinderconnect.utils.PermissionManager;
 import com.example.kinderconnect.utils.Resource;
+
+// --- INICIO DE IMPORTACIONES AÑADIDAS ---
+import com.example.kinderconnect.utils.DateUtils;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
+// --- FIN DE IMPORTACIONES AÑADIDAS ---
 
 public class TeacherHomeFragment extends Fragment {
     private FragmentTeacherHomeBinding binding;
@@ -46,22 +52,20 @@ public class TeacherHomeFragment extends Fragment {
         preferencesManager = new PreferencesManager(requireContext());
 
         setupUI();
-        setupNavigationListeners(); // Listeners de navegación
-        setupBusActionListeners(); // Listeners específicos del bus
-        loadDashboardData();       // Cargar datos como total alumnos
-        observeBusStatus();        // Observar estado inicial del bus
+        setupNavigationListeners();
+        setupBusActionListeners();
+        loadDashboardData();
+        observeBusStatus();
     }
 
     private void setupUI() {
         String teacherName = preferencesManager.getUserName();
         if (binding != null) {
             binding.tvGreeting.setText(getString(R.string.hello_teacher, teacherName));
-            // Asegurarse de que inicialmente los botones de acción del bus estén ocultos
-            // y el progreso visible hasta que se cargue el estado.
             binding.progressBusStatus.setVisibility(View.VISIBLE);
             binding.btnStartBusRoute.setVisibility(View.GONE);
             binding.btnFinishBusRoute.setVisibility(View.GONE);
-            binding.btnStartBusRoute.setEnabled(false); // Deshabilitados inicialmente
+            binding.btnStartBusRoute.setEnabled(false);
             binding.btnFinishBusRoute.setEnabled(false);
         }
     }
@@ -82,35 +86,32 @@ public class TeacherHomeFragment extends Fragment {
                 Navigation.findNavController(v).navigate(R.id.teacherGalleryFragment));
     }
 
-    // --- SECCIÓN DEL BUS ---
+    // --- SECCIÓN DEL BUS (Sin cambios) ---
     private void setupBusActionListeners() {
         if (binding == null) return;
         binding.btnStartBusRoute.setOnClickListener(v -> {
             Log.d(TAG, "Botón 'Iniciar Recorrido' presionado.");
-            // Verificar permisos antes de intentar iniciar
             if (!PermissionManager.hasLocationPermission(requireContext())) {
                 Log.w(TAG, "Permiso de ubicación no concedido. Solicitando...");
-                // Usar requestPermissions directamente desde Fragment
                 requestPermissions(
                         new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
-                        Constants.REQUEST_LOCATION_PERMISSION // Usar constante definida
+                        Constants.REQUEST_LOCATION_PERMISSION
                 );
                 Toast.makeText(getContext(), "Se necesitan permisos de ubicación para iniciar la ruta", Toast.LENGTH_LONG).show();
             } else {
                 Log.d(TAG, "Permiso de ubicación ya concedido. Procediendo a iniciar ruta...");
-                updateBusStatus("ACTIVE"); // Solo inicia si hay permisos
+                updateBusStatus("ACTIVE");
             }
         });
         binding.btnFinishBusRoute.setOnClickListener(v -> {
             Log.d(TAG, "Botón 'Finalizar Recorrido' presionado.");
-            updateBusStatus("FINISHED"); // O "STOPPED" si prefieres
+            updateBusStatus("FINISHED");
         });
     }
 
     private void observeBusStatus() {
         if (binding == null) return;
         Log.d(TAG, "Observando estado inicial del bus...");
-        // Mostrar progreso y ocultar botones mientras se carga
         binding.progressBusStatus.setVisibility(View.VISIBLE);
         binding.btnStartBusRoute.setVisibility(View.GONE);
         binding.btnFinishBusRoute.setVisibility(View.GONE);
@@ -119,25 +120,20 @@ public class TeacherHomeFragment extends Fragment {
 
 
         viewModel.getCurrentBusStatus().observe(getViewLifecycleOwner(), resource -> {
-            // Comprobar binding y contexto OTRA VEZ dentro del observer
             if (binding == null || getContext() == null) {
                 Log.w(TAG, "Observer de estado del bus: Binding o Context nulo, saliendo.");
                 return;
             }
 
-            binding.progressBusStatus.setVisibility(View.GONE); // Ocultar progreso al recibir respuesta
+            binding.progressBusStatus.setVisibility(View.GONE);
 
             if (resource != null) {
                 switch (resource.getStatus()) {
                     case SUCCESS:
                         String status = resource.getData();
                         Log.i(TAG, "Estado actual del bus obtenido desde Firestore: " + status);
-                        updateBusButtonsUI(status); // Actualizar UI de botones basado en estado
-                        // Sincronizar estado del servicio de ubicación con el estado de Firestore
+                        updateBusButtonsUI(status);
                         if ("ACTIVE".equals(status)) {
-                            // Si el estado es ACTIVO pero el servicio no corre (ej. tras reiniciar app), iniciarlo
-                            // Podríamos necesitar una forma de verificar si el servicio ya está corriendo
-                            // Por ahora, lo iniciamos si el estado es ACTIVE y tenemos permisos
                             if (PermissionManager.hasLocationPermission(requireContext())) {
                                 Log.d(TAG, "Estado es ACTIVE y hay permisos, asegurando que el servicio esté iniciado.");
                                 startLocationService();
@@ -146,14 +142,14 @@ public class TeacherHomeFragment extends Fragment {
                             }
                         } else {
                             Log.d(TAG, "Estado no es ACTIVE, asegurando que el servicio esté detenido.");
-                            stopLocationService(); // Asegurarse de detener el servicio si no está activo
+                            stopLocationService();
                         }
                         break;
                     case ERROR:
                         Log.e(TAG, "Error al obtener estado inicial del bus: " + resource.getMessage());
                         Toast.makeText(getContext(), "Error al cargar estado: " + resource.getMessage(), Toast.LENGTH_LONG).show();
-                        updateBusButtonsUI("STOPPED"); // Mostrar botón de iniciar por defecto en caso de error
-                        stopLocationService(); // Detener servicio si hay error
+                        updateBusButtonsUI("STOPPED");
+                        stopLocationService();
                         break;
                     case LOADING:
                         Log.d(TAG, "Cargando estado inicial del bus...");
@@ -165,23 +161,21 @@ public class TeacherHomeFragment extends Fragment {
             } else {
                 Log.e(TAG, "Respuesta nula al obtener estado inicial del bus.");
                 Toast.makeText(getContext(), "No se pudo obtener el estado del bus", Toast.LENGTH_SHORT).show();
-                updateBusButtonsUI("STOPPED"); // Mostrar botón iniciar por defecto
-                stopLocationService(); // Detener servicio
+                updateBusButtonsUI("STOPPED");
+                stopLocationService();
             }
         });
     }
 
-    // Método auxiliar para actualizar la visibilidad y habilitación de los botones del bus
     private void updateBusButtonsUI(String status) {
         if (binding == null) return;
         if ("ACTIVE".equals(status)) {
             binding.btnStartBusRoute.setVisibility(View.GONE);
             binding.btnFinishBusRoute.setVisibility(View.VISIBLE);
-        } else { // Incluye STOPPED, FINISHED, null, etc.
+        } else {
             binding.btnStartBusRoute.setVisibility(View.VISIBLE);
             binding.btnFinishBusRoute.setVisibility(View.GONE);
         }
-        // Habilitar ambos botones después de determinar la visibilidad
         binding.btnStartBusRoute.setEnabled(true);
         binding.btnFinishBusRoute.setEnabled(true);
         Log.d(TAG, "UI de botones actualizada para estado: " + status);
@@ -199,18 +193,16 @@ public class TeacherHomeFragment extends Fragment {
         LiveData<Resource<Void>> action = "ACTIVE".equals(newStatus) ?
                 viewModel.startBusRoute() : viewModel.finishBusRoute();
 
-        // Usar observe en lugar de observeForever y quitar manualmente el observer
         action.observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<Resource<Void>>() {
             @Override
             public void onChanged(Resource<Void> resource) {
                 if (binding == null || getContext() == null) {
-                    action.removeObserver(this); // Remover si la vista se destruyó
+                    action.removeObserver(this);
                     return;
                 }
 
-                // Solo actuar cuando ya no esté LOADING
                 if (resource != null && resource.getStatus() != Resource.Status.LOADING) {
-                    action.removeObserver(this); // ¡Importante! Remover observer después de la primera respuesta no LOADING
+                    action.removeObserver(this);
 
                     binding.progressBusStatus.setVisibility(View.GONE);
 
@@ -219,25 +211,22 @@ public class TeacherHomeFragment extends Fragment {
                         String message = "ACTIVE".equals(newStatus) ? "Recorrido iniciado" : "Recorrido finalizado";
                         Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
 
-                        // Actualizar UI de botones y controlar servicio
                         updateBusButtonsUI(newStatus);
                         if ("ACTIVE".equals(newStatus)) {
                             startLocationService();
-                        } else { // FINISHED o STOPPED
+                        } else {
                             stopLocationService();
                         }
 
                     } else { // ERROR
                         Log.e(TAG, "Error al actualizar estado del bus en Firestore: " + resource.getMessage());
                         Toast.makeText(getContext(), "Error al actualizar: " + resource.getMessage(), Toast.LENGTH_LONG).show();
-                        // Re-habilitar botones y re-observar estado actual por si acaso
                         binding.btnStartBusRoute.setEnabled(true);
                         binding.btnFinishBusRoute.setEnabled(true);
-                        observeBusStatus(); // Re-sincronizar UI con el estado real
+                        observeBusStatus();
                     }
                 } else if (resource != null && resource.getStatus() == Resource.Status.LOADING) {
                     Log.d(TAG, "Actualizando estado del bus... (LOADING)");
-                    // El ProgressBar ya está visible
                 } else { // resource == null
                     Log.e(TAG, "Error desconocido (recurso nulo) al actualizar estado del bus.");
                     binding.progressBusStatus.setVisibility(View.GONE);
@@ -255,11 +244,9 @@ public class TeacherHomeFragment extends Fragment {
             Log.e(TAG, "Intento de iniciar servicio con contexto nulo.");
             return;
         }
-        // Doble check de permisos por si acaso
         if (!PermissionManager.hasLocationPermission(requireContext())) {
             Log.e(TAG, "Intento de iniciar servicio SIN permisos de ubicación.");
             Toast.makeText(getContext(), "Se necesitan permisos de ubicación.", Toast.LENGTH_SHORT).show();
-            // Podrías solicitar permisos aquí de nuevo si es necesario
             requestPermissions(
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
                     Constants.REQUEST_LOCATION_PERMISSION
@@ -294,11 +281,15 @@ public class TeacherHomeFragment extends Fragment {
     // --- FIN SECCIÓN DEL BUS ---
 
 
+    // --- INICIO DE CÓDIGO MODIFICADO ---
     private void loadDashboardData() {
         if (binding == null) return;
         String teacherId = preferencesManager.getUserId();
+        if (teacherId == null) return;
+
         Log.d(TAG, "Cargando datos del dashboard...");
 
+        // 1. Cargar total de alumnos
         viewModel.getStudentsByTeacher(teacherId).observe(getViewLifecycleOwner(), resource -> {
             if (binding == null) return;
             if (resource != null && resource.getStatus() == Resource.Status.SUCCESS) {
@@ -308,23 +299,44 @@ public class TeacherHomeFragment extends Fragment {
             } else if (resource != null && resource.getStatus() == Resource.Status.ERROR){
                 binding.tvTotalStudents.setText("-");
                 Log.e(TAG, "Error al cargar lista de estudiantes: " + resource.getMessage());
-                // Podrías mostrar un Toast aquí
             }
-            // Cargar otras estadísticas aquí si es necesario (ej. asistencia hoy)
+        });
+
+        // 2. Cargar asistencia de HOY
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        String todayStr = sdf.format(DateUtils.getToday());
+
+        viewModel.getAttendanceByDate(teacherId, todayStr).observe(getViewLifecycleOwner(), resource -> {
+            if (binding == null) return;
+            if (resource != null && resource.getStatus() == Resource.Status.SUCCESS) {
+                // Contamos solo los que asistieron (Presente o Tarde)
+                int attendanceCount = 0;
+                if (resource.getData() != null) {
+                    for (com.example.kinderconnect.data.model.Attendance attendance : resource.getData()) {
+                        if (Constants.ATTENDANCE_PRESENT.equals(attendance.getStatus()) ||
+                                Constants.ATTENDANCE_LATE.equals(attendance.getStatus())) {
+                            attendanceCount++;
+                        }
+                    }
+                }
+                binding.tvTodayAttendance.setText(String.valueOf(attendanceCount));
+                Log.d(TAG, "Asistencia de hoy cargada: " + attendanceCount);
+            } else if (resource != null && resource.getStatus() == Resource.Status.ERROR) {
+                binding.tvTodayAttendance.setText("-");
+                Log.e(TAG, "Error al cargar asistencia del día: " + resource.getMessage());
+            }
         });
     }
+    // --- FIN DE CÓDIGO MODIFICADO ---
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         Log.d(TAG, "onDestroyView: Limpiando binding.");
-        // Considerar si detener el servicio aquí es apropiado,
-        // podría ser mejor dejarlo corriendo si la ruta está activa
-        // stopLocationService(); // Descomentar si quieres detenerlo siempre al salir del fragmento
         binding = null;
     }
 
-    // --- MANEJAR RESULTADO DE PERMISOS ---
+    // --- MANEJAR RESULTADO DE PERMISOS (Sin cambios) ---
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -334,20 +346,16 @@ public class TeacherHomeFragment extends Fragment {
             for (int result : grantResults) {
                 if (result == PackageManager.PERMISSION_GRANTED) {
                     granted = true;
-                    break; // Basta con que uno (fine o coarse) esté concedido
+                    break;
                 }
             }
 
             if (granted) {
                 Log.i(TAG, "Permiso de ubicación CONCEDIDO por el usuario.");
                 Toast.makeText(getContext(), "Permiso concedido. Ahora puedes iniciar la ruta.", Toast.LENGTH_SHORT).show();
-                // Ahora que tenemos permiso, si el estado del bus es ACTIVE, iniciar servicio
-                // Opcional: Podrías llamar a updateBusStatus("ACTIVE") aquí si quieres iniciarla inmediatamente
-                // updateBusStatus("ACTIVE");
             } else {
                 Log.w(TAG, "Permiso de ubicación DENEGADO por el usuario.");
                 Toast.makeText(getContext(), "Permiso denegado. No se puede iniciar el seguimiento de ubicación.", Toast.LENGTH_LONG).show();
-                // Podrías mostrar un diálogo explicando por qué necesitas el permiso
             }
         }
     }

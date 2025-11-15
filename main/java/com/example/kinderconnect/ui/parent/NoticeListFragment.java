@@ -88,7 +88,11 @@ public class NoticeListFragment extends Fragment {
             return;
         }
 
-        viewModel.getNoticesByGroup(studentGroupName).observe(getViewLifecycleOwner(), resource -> {
+        // --- INICIO DE CÓDIGO MODIFICADO ---
+        // Se llama al nuevo método que trae avisos del grupo Y de la escuela
+        viewModel.getNoticesForParent(studentGroupName).observe(getViewLifecycleOwner(), resource -> {
+            // --- FIN DE CÓDIGO MODIFICADO ---
+
             if (binding == null) return;
             if (resource != null) {
                 switch (resource.getStatus()) {

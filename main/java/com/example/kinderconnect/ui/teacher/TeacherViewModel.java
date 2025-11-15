@@ -44,10 +44,13 @@ public class TeacherViewModel extends ViewModel {
         return studentRepository.addStudent(student, parentEmail, imageUri);
     }
 
-    // --- INICIO DE CÓDIGO AÑADIDO ---
-    public LiveData<Resource<Student>> updateStudent(Student student, String parentEmail, Uri newImageUri) {
-        return studentRepository.updateStudent(student, parentEmail, newImageUri);
+    // --- INICIO DE CÓDIGO MODIFICADO ---
+    // Método 'updateStudent' ya NO recibe 'parentEmail'
+    public LiveData<Resource<Student>> updateStudent(Student student, Uri newImageUri) {
+        // Llama al nuevo método del repositorio
+        return studentRepository.updateStudent(student, newImageUri);
     }
+    // --- FIN DE CÓDIGO MODIFICADO ---
 
     public LiveData<Resource<Student>> getStudentById(String studentId) {
         return studentRepository.getStudentById(studentId);

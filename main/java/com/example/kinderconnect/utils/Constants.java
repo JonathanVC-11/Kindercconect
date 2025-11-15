@@ -93,15 +93,41 @@ public class Constants {
 
     // --- RUTA DE SIMULACIÓN MODIFICADA (MÁS CORTA Y VISIBLE) ---
     public static final List<GeoPoint> SIMULATION_ROUTE = Arrays.asList(
-            new GeoPoint(19.4326, -99.1332), // 1. Zócalo (Inicio)
-            new GeoPoint(19.4340, -99.1332), // 2. Lado Catedral (Norte)
-            new GeoPoint(19.4340, -99.1317), // 3. Esquina Noreste
-            new GeoPoint(19.4326, -99.1317), // 4. Lado Palacio Nacional (Este)
-            new GeoPoint(19.4312, -99.1317), // 5. Esquina Sureste
-            new GeoPoint(19.4312, -99.1332), // 6. Lado Ayuntamiento (Sur)
-            new GeoPoint(19.4312, -99.1347), // 7. Esquina Suroeste
-            new GeoPoint(19.4326, -99.1347), // 8. Lado Oeste
-            new GeoPoint(19.4326, -99.1332)  // 9. De vuelta al inicio
+            new GeoPoint(19.17463,-99.46443),
+            new GeoPoint(19.17476,-99.46463),
+            new GeoPoint(19.17522,-99.46464),
+            new GeoPoint(19.17530,-99.46471),
+            new GeoPoint(19.17533,-99.46480),
+            new GeoPoint(19.17544,-99.46535),
+            new GeoPoint(19.17718,-99.46505),
+            new GeoPoint(19.17743,-99.46629),
+            new GeoPoint(19.18008,-99.46587),
+            new GeoPoint(19.17989,-99.46458),
+            new GeoPoint(19.18280,-99.46399),
+            new GeoPoint(19.18395,-99.47119),
+            new GeoPoint(19.18097,-99.47184),
+            new GeoPoint(19.18167,-99.47865),
+            new GeoPoint(19.18310,-99.48763),
+            new GeoPoint(19.17672,-99.48926),
+            new GeoPoint(19.17640,-99.48773),
+            new GeoPoint(19.17571,-99.48717),
+            new GeoPoint(19.17511,-99.48727),
+            new GeoPoint(19.17165,-99.48678),
+            new GeoPoint(19.16035,-99.48756),
+            new GeoPoint(19.15767,-99.48781),
+            new GeoPoint(19.15654,-99.48731),
+            new GeoPoint(19.15315,-99.48783),
+            new GeoPoint(19.15126,-99.48801),
+            new GeoPoint(19.14495,-99.48726),
+            new GeoPoint(19.14312,-99.48622),
+            new GeoPoint(19.14736,-99.48220),
+            new GeoPoint(19.15577,-99.47451),
+            new GeoPoint(19.16184,-99.46460),
+            new GeoPoint(19.17270,-99.46713),
+            new GeoPoint(19.17472,-99.46676),
+            new GeoPoint(19.17448,-99.46467),
+            new GeoPoint(19.17448,-99.46467),
+            new GeoPoint(19.17472,-99.46463)
     );
     // -----------------------------------------------------------
 }

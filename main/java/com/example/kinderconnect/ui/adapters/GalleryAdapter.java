@@ -76,43 +76,29 @@ public class GalleryAdapter extends ListAdapter<GalleryItem, GalleryAdapter.Gall
             });
         }
 
-        // --- ¡¡LÓGICA 'BIND' MODIFICADA!! ---
+        // --- ¡¡LÓGICA 'BIND' MODIFICADA Y SIMPLIFICADA!! ---
         void bind(GalleryItem item) {
 
             boolean isVideo = item.getMediaType().equals(Constants.MEDIA_VIDEO);
+            binding.ivPlayIcon.setVisibility(isVideo ? View.VISIBLE : View.GONE);
 
-            if (isVideo) {
-                // --- INICIO DE LA CORRECCIÓN ---
-                // Es un VIDEO
-                binding.ivPlayIcon.setVisibility(View.VISIBLE);
+            // Usar el thumbnail si existe
+            String urlToLoad = item.getThumbnailUrl();
 
-                // Pedimos a Glide que cargue la URL del video.
-                // Glide tomará un fotograma como miniatura.
-                Glide.with(binding.getRoot().getContext())
-                        .load(item.getMediaUrl()) // Cargar la URL del video
-                        .placeholder(R.drawable.ic_logo)
-                        .centerCrop()
-                        .into(binding.ivThumbnail);
-                // --- FIN DE LA CORRECCIÓN ---
-
-            } else {
-                // Es una IMAGEN
-                binding.ivPlayIcon.setVisibility(View.GONE);
-
-                // Usar el thumbnail si existe, sino la imagen original
-                String urlToLoad = item.getThumbnailUrl();
-                if (urlToLoad == null || urlToLoad.isEmpty()) {
-                    urlToLoad = item.getMediaUrl();
-                }
-
-                Glide.with(binding.getRoot().getContext())
-                        .load(urlToLoad)
-                        .placeholder(R.drawable.ic_logo)
-                        .centerCrop()
-                        .into(binding.ivThumbnail);
+            // Si no hay thumbnail (ej. video antiguo o foto), usar la URL original
+            if (urlToLoad == null || urlToLoad.isEmpty()) {
+                urlToLoad = item.getMediaUrl();
             }
 
-            // Lógica para la fecha (esta ya la tenías bien)
+            // Cargar la URL decidida (sea thumbnail o media original)
+            Glide.with(binding.getRoot().getContext())
+                    .load(urlToLoad)
+                    .placeholder(R.drawable.ic_logo)
+                    .centerCrop()
+                    .into(binding.ivThumbnail);
+
+
+            // Lógica para la fecha (sin cambios)
             if (item.getUploadedAt() != null) {
                 binding.tvDate.setText(DateUtils.getRelativeTimeString(item.getUploadedAt()));
                 binding.tvDate.setVisibility(View.VISIBLE);
@@ -120,6 +106,7 @@ public class GalleryAdapter extends ListAdapter<GalleryItem, GalleryAdapter.Gall
                 binding.tvDate.setVisibility(View.GONE);
             }
         }
+        // --- FIN DE LA MODIFICACIÓN ---
     }
 
     public interface OnItemClickListener {

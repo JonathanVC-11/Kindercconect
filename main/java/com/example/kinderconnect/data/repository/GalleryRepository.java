@@ -2,6 +2,7 @@ package com.example.kinderconnect.data.repository;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.media.MediaMetadataRetriever; // <-- AÑADIDO
 import android.net.Uri;
 import android.util.Log;
 
@@ -33,10 +34,7 @@ public class GalleryRepository {
         this.storage = FirebaseStorage.getInstance();
     }
 
-    // --- NUEVO MÉTODO AÑADIDO ---
-    /**
-     * Sube una foto de perfil, la comprime y devuelve la URL de descarga.
-     */
+    // ... (uploadProfilePicture no cambia) ...
     public LiveData<Resource<String>> uploadProfilePicture(Context context, String userId, Uri imageUri) {
         MutableLiveData<Resource<String>> result = new MutableLiveData<>();
         result.setValue(Resource.loading(null));
@@ -74,7 +72,7 @@ public class GalleryRepository {
 
         return result;
     }
-    // ----------------------------
+
 
     public LiveData<Resource<String>> uploadMedia(GalleryItem galleryItem, Uri mediaUri, Context context) {
         MutableLiveData<Resource<String>> result = new MutableLiveData<>();
@@ -108,11 +106,13 @@ public class GalleryRepository {
 
                                 if (galleryItem.getMediaType().equals(Constants.MEDIA_IMAGE)) {
                                     Log.d(TAG, "Es imagen, iniciando subida de thumbnail...");
-                                    uploadThumbnail(context, mediaUri, galleryItem, result);
+                                    uploadImageThumbnail(context, mediaUri, galleryItem, result);
                                 } else {
-                                    Log.d(TAG, "Es video, guardando en Firestore sin thumbnail.");
-                                    galleryItem.setThumbnailUrl(null);
-                                    saveGalleryItemToFirestore(galleryItem, result);
+                                    // --- INICIO DE CÓDIGO MODIFICADO ---
+                                    Log.d(TAG, "Es video, iniciando subida de thumbnail de video...");
+                                    // Pasamos el 'context' y el 'mediaUri' original
+                                    uploadVideoThumbnail(context, mediaUri, galleryItem, result);
+                                    // --- FIN DE CÓDIGO MODIFICADO ---
                                 }
                             })
                             .addOnFailureListener(e -> {
@@ -128,7 +128,8 @@ public class GalleryRepository {
         return result;
     }
 
-    private void uploadThumbnail(Context context, Uri originalImageUri, GalleryItem galleryItem, MutableLiveData<Resource<String>> result) {
+    // --- MÉTODO RENOMBRADO ---
+    private void uploadImageThumbnail(Context context, Uri originalImageUri, GalleryItem galleryItem, MutableLiveData<Resource<String>> result) {
         try {
             Bitmap bitmap = ImageUtils.getBitmapFromUri(context, originalImageUri);
             Bitmap compressedBitmap = ImageUtils.compressBitmap(bitmap, 400, 400);
@@ -164,8 +165,78 @@ public class GalleryRepository {
     }
 
 
+    // --- INICIO DE CÓDIGO AÑADIDO (NUEVO MÉTODO) ---
+    /**
+     * Extrae un fotograma de un video, lo comprime y lo sube como thumbnail.
+     */
+    private void uploadVideoThumbnail(Context context, Uri videoUri, GalleryItem galleryItem, MutableLiveData<Resource<String>> result) {
+        Bitmap videoFrame = null;
+        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+
+        try {
+            // 1. Usar MediaMetadataRetriever para obtener un fotograma
+            retriever.setDataSource(context, videoUri);
+            // Obtener un fotograma a los 3 segundos (3000000 microsegundos), o el primero si es más corto
+            videoFrame = retriever.getFrameAtTime(3000000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
+
+            if (videoFrame == null) {
+                // Fallback al primer fotograma
+                videoFrame = retriever.getFrameAtTime(0, MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
+            }
+
+            if (videoFrame == null) {
+                // Si sigue siendo nulo, no se pudo extraer
+                Log.e(TAG, "No se pudo extraer fotograma del video. Guardando sin thumbnail.");
+                galleryItem.setThumbnailUrl(null);
+                saveGalleryItemToFirestore(galleryItem, result);
+                return;
+            }
+
+            // 2. Comprimir el fotograma (Bitmap)
+            Bitmap compressedBitmap = ImageUtils.compressBitmap(videoFrame, 400, 400);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            compressedBitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
+            byte[] data = baos.toByteArray();
+
+            // 3. Subir el fotograma comprimido a Storage
+            String thumbFileName = "thumb_video_" + UUID.randomUUID().toString() + ".jpg";
+            StorageReference thumbRef = storage.getReference().child(Constants.STORAGE_GALLERY + thumbFileName);
+
+            Log.d(TAG, "Subiendo thumbnail de video: " + thumbFileName);
+            thumbRef.putBytes(data)
+                    .addOnSuccessListener(taskSnapshot -> {
+                        thumbRef.getDownloadUrl().addOnSuccessListener(thumbUri -> {
+                            Log.d(TAG, "Thumbnail de video subido, URL: " + thumbUri.toString());
+                            galleryItem.setThumbnailUrl(thumbUri.toString());
+                            saveGalleryItemToFirestore(galleryItem, result); // 4. Guardar en Firestore
+                        }).addOnFailureListener(e -> {
+                            Log.e(TAG, "Error al obtener URL del thumbnail de video", e);
+                            result.setValue(Resource.error("Error al subir thumbnail: " + e.getMessage(), null));
+                        });
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Error al subir bytes del thumbnail de video", e);
+                        result.setValue(Resource.error("Error al subir thumbnail: " + e.getMessage(), null));
+                    });
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error al procesar thumbnail de video", e);
+            result.setValue(Resource.error("Error al procesar video: " + e.getMessage(), null));
+        } finally {
+            // 5. Liberar el retriever
+            try {
+                retriever.release();
+            } catch (IOException e) {
+                Log.e(TAG, "Error al liberar MediaMetadataRetriever", e);
+            }
+        }
+    }
+    // --- FIN DE CÓDIGO AÑADIDO ---
+
+
     private void saveGalleryItemToFirestore(GalleryItem galleryItem,
                                             MutableLiveData<Resource<String>> result) {
+        // ... (sin cambios) ...
         Log.d(TAG, "Guardando metadatos en Firestore...");
         firestore.collection(Constants.COLLECTION_GALLERY)
                 .add(galleryItem)
@@ -179,6 +250,7 @@ public class GalleryRepository {
                 });
     }
 
+    // ... (El resto de la clase: getGalleryByGroup, getGalleryByStudent, deleteGalleryItem, etc., no cambian) ...
     public LiveData<Resource<List<GalleryItem>>> getGalleryByGroup(String groupName) {
         MutableLiveData<Resource<List<GalleryItem>>> result = new MutableLiveData<>();
         result.setValue(Resource.loading(null));

@@ -60,28 +60,27 @@ public class StudentRepository {
         return result;
     }
 
-    // --- INICIO DE CÓDIGO AÑADIDO ---
-    // Nuevo método de ACTUALIZACIÓN
-    public LiveData<Resource<Student>> updateStudent(Student student, String parentEmail, @Nullable Uri newImageUri) {
+    // --- INICIO DE CÓDIGO MODIFICADO ---
+    // Método de ACTUALIZACIÓN modificado. Ya NO recibe parentEmail.
+    public LiveData<Resource<Student>> updateStudent(Student student, @Nullable Uri newImageUri) {
         MutableLiveData<Resource<Student>> result = new MutableLiveData<>();
         result.setValue(Resource.loading(null));
 
-        // La lógica de buscar padre es la misma
-        findParentByEmail(parentEmail, result, (parentId) -> {
-            student.setParentId(parentId);
-            if (newImageUri != null) {
-                // Si hay imagen NUEVA, borramos la antigua (si existe) y subimos la nueva
-                deleteFromStorage(student.getPhotoUrl()); // Borra la foto antigua
-                uploadImageAndSaveStudent(student, newImageUri, result, true); // Sube la nueva
-            } else {
-                // Si NO hay imagen nueva, solo actualizamos Firestore
-                saveStudentToFirestore(student, result, true);
-            }
-        });
+        // Ya no necesitamos 'findParentByEmail'.
+        // El 'student' que recibimos ya tiene el parentId.
+        // Simplemente gestionamos la imagen.
+        if (newImageUri != null) {
+            // Si hay imagen NUEVA, borramos la antigua (si existe) y subimos la nueva
+            deleteFromStorage(student.getPhotoUrl()); // Borra la foto antigua
+            uploadImageAndSaveStudent(student, newImageUri, result, true); // Sube la nueva
+        } else {
+            // Si NO hay imagen nueva, solo actualizamos Firestore
+            saveStudentToFirestore(student, result, true);
+        }
 
         return result;
     }
-    // --- FIN DE CÓDIGO AÑADIDO ---
+    // --- FIN DE CÓDIGO MODIFICADO ---
 
     // Método helper para buscar al padre
     private void findParentByEmail(String parentEmail, MutableLiveData<Resource<Student>> result, ParentIdCallback callback) {

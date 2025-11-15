@@ -260,10 +260,11 @@ public class AddStudentFragment extends Fragment {
             studentToEdit.setEmergencyContact(emergencyContact);
             studentToEdit.setAllergies(allergies);
             studentToEdit.setMedicalNotes(medicalNotes);
-            // El 'teacherId' y 'parentId' no deberían cambiar
+            // El 'teacherId' y 'parentId' (que está en studentToEdit) no cambian
 
             // selectedImageUri solo será != null si el usuario eligió una FOTO NUEVA
-            viewModel.updateStudent(studentToEdit, parentEmail, selectedImageUri)
+            // Ya no pasamos el 'parentEmail'
+            viewModel.updateStudent(studentToEdit, selectedImageUri)
                     .observe(getViewLifecycleOwner(), resource -> {
                         handleSaveResponse(resource, "Alumno actualizado correctamente");
                     });

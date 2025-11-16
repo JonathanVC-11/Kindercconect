@@ -9,7 +9,30 @@
         android:id="@+id/parentHomeFragment"
         android:name="com.example.kinderconnect.ui.parent.ParentHomeFragment"
         android:label="Inicio"
-        tools:layout="@layout/fragment_parent_home" />
+        tools:layout="@layout/fragment_parent_home" >
+        <action
+            android:id="@+id/action_home_to_register_student"
+            app:destination="@id/registerStudentFragment" />
+        <action
+            android:id="@+id/action_home_to_edit_student"
+            app:destination="@id/editStudentFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/registerStudentFragment"
+        android:name="com.example.kinderconnect.ui.parent.RegisterStudentFragment"
+        android:label="Registrar Alumno"
+        tools:layout="@layout/fragment_register_student" />
+
+    <fragment
+        android:id="@+id/editStudentFragment"
+        android:name="com.example.kinderconnect.ui.parent.EditStudentFragment"
+        android:label="Editar Datos del Alumno"
+        tools:layout="@layout/fragment_edit_student">
+        <argument
+            android:name="studentId"
+            app:argType="string" />
+    </fragment>
 
     <fragment
         android:id="@+id/gradeViewFragment"
@@ -40,6 +63,11 @@
             app:argType="string" />
     </fragment>
 
+    <fragment
+        android:id="@+id/notificationsFragment"
+        android:name="com.example.kinderconnect.ui.common.NotificationsFragment"
+        android:label="Notificaciones"
+        tools:layout="@layout/fragment_notifications" />
     <fragment
         android:id="@+id/noticeDetailFragment"
         android:name="com.example.kinderconnect.ui.parent.NoticeDetailFragment"

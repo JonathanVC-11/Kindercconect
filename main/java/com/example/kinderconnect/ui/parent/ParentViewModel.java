@@ -1,18 +1,25 @@
 package com.example.kinderconnect.ui.parent;
 
+import android.net.Uri;
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MediatorLiveData;
+import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 import com.example.kinderconnect.data.model.Attendance;
 import com.example.kinderconnect.data.model.BusStatus;
 import com.example.kinderconnect.data.model.GalleryItem;
 import com.example.kinderconnect.data.model.Grade;
+import com.example.kinderconnect.data.model.Group;
 import com.example.kinderconnect.data.model.Notice;
+import com.example.kinderconnect.data.model.Notification; // <-- AÑADIDO
 import com.example.kinderconnect.data.model.Student;
 import com.example.kinderconnect.data.repository.AttendanceRepository;
 import com.example.kinderconnect.data.repository.BusRepository;
 import com.example.kinderconnect.data.repository.GalleryRepository;
 import com.example.kinderconnect.data.repository.GradeRepository;
+import com.example.kinderconnect.data.repository.GroupRepository;
 import com.example.kinderconnect.data.repository.NoticeRepository;
+import com.example.kinderconnect.data.repository.NotificationRepository; // <-- AÑADIDO
 import com.example.kinderconnect.data.repository.StudentRepository;
 import com.example.kinderconnect.utils.Resource;
 import java.util.Date;
@@ -25,6 +32,8 @@ public class ParentViewModel extends ViewModel {
     private final NoticeRepository noticeRepository;
     private final GalleryRepository galleryRepository;
     private final BusRepository busRepository;
+    private final GroupRepository groupRepository;
+    private final NotificationRepository notificationRepository; // <-- AÑADIDO
 
     public ParentViewModel() {
         this.studentRepository = new StudentRepository();
@@ -33,7 +42,30 @@ public class ParentViewModel extends ViewModel {
         this.noticeRepository = new NoticeRepository();
         this.galleryRepository = new GalleryRepository();
         this.busRepository = new BusRepository();
+        this.groupRepository = new GroupRepository();
+        this.notificationRepository = new NotificationRepository(); // <-- AÑADIDO
     }
+
+    // --- (Métodos de Bus, Estudiantes, Asistencia, Calificaciones, Avisos, Galería sin cambios) ---
+    // ...
+
+    // --- INICIO DE CÓDIGO AÑADIDO ---
+    // --- Notificaciones ---
+    public LiveData<Resource<List<Notification>>> getNotifications(String userId) {
+        return notificationRepository.getNotificationsForUser(userId);
+    }
+
+    public LiveData<Resource<Void>> markNotificationAsRead(String notificationId) {
+        return notificationRepository.markNotificationAsRead(notificationId);
+    }
+
+    public LiveData<Resource<Void>> markAllNotificationsAsRead(String userId) {
+        return notificationRepository.markAllAsRead(userId);
+    }
+    // --- FIN DE CÓDIGO AÑADIDO ---
+
+    // ... (El resto de métodos: getBusStatusUpdates, getStudentsByParent, etc.)
+    // (Asegúrate de que estén todos aquí)
 
     // --- Bus ---
     public LiveData<Resource<BusStatus>> getBusStatusUpdates() {
@@ -47,6 +79,35 @@ public class ParentViewModel extends ViewModel {
 
     public LiveData<Resource<Student>> getStudentById(String studentId) {
         return studentRepository.getStudentById(studentId);
+    }
+
+    public LiveData<Resource<Student>> registerStudent(Student student, String teacherEmail, String parentId, Uri imageUri) {
+        MediatorLiveData<Resource<Student>> result = new MediatorLiveData<>();
+        result.setValue(Resource.loading(null));
+        LiveData<Resource<Group>> groupSource = groupRepository.getGroupByTeacherEmail(teacherEmail);
+
+        result.addSource(groupSource, groupResource -> {
+            if (groupResource.getStatus() == Resource.Status.SUCCESS) {
+                Group group = groupResource.getData();
+                if (group != null) {
+                    student.setParentId(parentId);
+                    student.setTeacherId(group.getTeacherId());
+                    student.setGroupName(group.getGrade() + " " + group.getGroupName());
+                    student.setActive(true);
+                    studentRepository.uploadAndRegisterStudent(student, imageUri, result);
+                } else {
+                    result.setValue(Resource.error("No se encontró ningún grupo para el correo: " + teacherEmail, null));
+                }
+            } else if (groupResource.getStatus() == Resource.Status.ERROR) {
+                result.setValue(Resource.error(groupResource.getMessage(), null));
+            }
+            result.removeSource(groupSource);
+        });
+        return result;
+    }
+
+    public LiveData<Resource<Student>> updateStudent(Student student, Uri newImageUri) {
+        return studentRepository.updateStudent(student, newImageUri);
     }
 
     // --- Asistencia ---
@@ -66,17 +127,9 @@ public class ParentViewModel extends ViewModel {
     }
 
     // --- Avisos ---
-
-    // --- INICIO DE CÓDIGO MODIFICADO ---
-    /**
-     * Obtiene una lista combinada de avisos de GRUPO y de ESCUELA para el padre.
-     */
     public LiveData<Resource<List<Notice>>> getNoticesForParent(String groupName) {
-        // Este método asume que has implementado 'getNoticesForParent'
-        // en tu NoticeRepository, como discutimos.
         return noticeRepository.getNoticesForParent(groupName);
     }
-    // --- FIN DE CÓDIGO MODIFICADO ---
 
     public LiveData<Resource<List<Notice>>> getNoticesByGroup(String groupName) {
         return noticeRepository.getNoticesByGroup(groupName);

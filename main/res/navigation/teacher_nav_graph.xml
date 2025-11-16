@@ -24,23 +24,8 @@
         android:label="Alumnos"
         tools:layout="@layout/fragment_student_list">
         <action
-            android:id="@+id/action_students_to_add_student"
-            app:destination="@id/addStudentFragment" />
-        <action
             android:id="@+id/action_students_to_grade_registration"
             app:destination="@id/gradeRegistrationFragment" />
-    </fragment>
-
-    <fragment
-        android:id="@+id/addStudentFragment"
-        android:name="com.example.kinderconnect.ui.teacher.AddStudentFragment"
-        android:label="Agregar Alumno"
-        tools:layout="@layout/fragment_add_student" >
-        <argument
-            android:name="studentId"
-            app:argType="string"
-            app:nullable="true"
-            android:defaultValue="@null" />
     </fragment>
 
     <fragment
@@ -70,6 +55,11 @@
     </fragment>
 
     <fragment
+        android:id="@+id/notificationsFragment"
+        android:name="com.example.kinderconnect.ui.common.NotificationsFragment"
+        android:label="Notificaciones"
+        tools:layout="@layout/fragment_notifications" />
+    <fragment
         android:id="@+id/publishNoticeFragment"
         android:name="com.example.kinderconnect.ui.teacher.PublishNoticeFragment"
         android:label="Publicar Aviso"
@@ -91,6 +81,16 @@
         android:id="@+id/teacherProfileFragment"
         android:name="com.example.kinderconnect.ui.common.ProfileFragment"
         android:label="Perfil"
-        tools:layout="@layout/fragment_profile" />
+        tools:layout="@layout/fragment_profile" >
+        <action
+            android:id="@+id/action_profile_to_manage_group"
+            app:destination="@id/manageGroupFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/manageGroupFragment"
+        android:name="com.example.kinderconnect.ui.teacher.ManageGroupFragment"
+        android:label="Administrar mi Grupo"
+        tools:layout="@layout/fragment_manage_group" />
 
 </navigation>

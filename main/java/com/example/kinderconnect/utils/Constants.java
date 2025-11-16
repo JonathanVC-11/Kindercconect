@@ -9,10 +9,16 @@ public class Constants {
     // Firestore Collections
     public static final String COLLECTION_USERS = "users";
     public static final String COLLECTION_STUDENTS = "students";
+
+    public static final String COLLECTION_GROUPS = "groups"; // <-- AÑADIDO
     public static final String COLLECTION_GRADES = "grades";
     public static final String COLLECTION_ATTENDANCE = "attendance";
     public static final String COLLECTION_NOTICES = "notices";
     public static final String COLLECTION_GALLERY = "gallery";
+
+    public static final String COLLECTION_NOTIFICATIONS = "notifications"; // <-- AÑADIDO
+
+    // User Types
 
     // User Types
     public static final String USER_TYPE_TEACHER = "TEACHER";

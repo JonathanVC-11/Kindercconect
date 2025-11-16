@@ -12,9 +12,9 @@
         android:title="@string/nav_students" />
 
     <item
-        android:id="@+id/teacherNoticesFragment"
+        android:id="@+id/notificationsFragment"
         android:icon="@drawable/ic_notifications"
-        android:title="@string/nav_notices" />
+        android:title="@string/nav_notifications" />
 
     <item
         android:id="@+id/teacherGalleryFragment"

@@ -5,15 +5,17 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="?attr/colorSurface"> <com.google.android.material.appbar.MaterialToolbar
-    android:id="@+id/toolbar"
-    android:layout_width="match_parent"
-    android:layout_height="?attr/actionBarSize"
-    android:background="?attr/colorPrimary"
-    app:title="@string/add_student"
-    app:titleTextColor="?attr/colorOnPrimary"
-    app:navigationIcon="@drawable/ic_close"
-    app:navigationIconTint="?attr/colorOnPrimary" />
+    android:background="?attr/colorSurface">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorPrimary"
+        app:title="Editar Datos del Alumno"
+        app:titleTextColor="?attr/colorOnPrimary"
+        app:navigationIcon="@drawable/ic_close"
+        app:navigationIconTint="?attr/colorOnPrimary" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -45,7 +47,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:layout_marginBottom="@dimen/margin_large"
-                android:text="Toca para seleccionar foto"
+                android:text="Toca para cambiar la foto"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:textSize="@dimen/text_size_small" />
 
@@ -89,49 +91,20 @@
                     android:inputType="none" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilGroupName"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="@dimen/margin_large"
-                app:startIconDrawable="@drawable/ic_people"
-                android:hint="@string/group_name">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etGroupName"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="textCapWords" />
-            </com.google.android.material.textfield.TextInputLayout>
-
             <TextView
                 style="?attr/textAppearanceTitleMedium"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/margin_large"
                 android:layout_marginBottom="@dimen/margin_small"
-                android:text="Datos de Contacto"
+                android:text="Información Adicional (Opcional)"
                 android:textColor="?attr/colorPrimary" />
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilParentEmail"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="@dimen/margin_normal"
-                app:startIconDrawable="@drawable/ic_email"
-                android:hint="Correo del padre/madre">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etParentEmail"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="textEmailAddress" />
-            </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilEmergencyContact"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="@dimen/margin_large"
+                android:layout_marginBottom="@dimen/margin_normal"
                 app:startIconDrawable="@drawable/ic_phone"
                 android:hint="@string/emergency_contact">
 
@@ -141,14 +114,6 @@
                     android:layout_height="wrap_content"
                     android:inputType="phone" />
             </com.google.android.material.textfield.TextInputLayout>
-
-            <TextView
-                style="?attr/textAppearanceTitleMedium"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="@dimen/margin_small"
-                android:text="Información Médica (Opcional)"
-                android:textColor="?attr/colorPrimary" />
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilAllergies"
@@ -187,7 +152,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/button_height"
                 android:layout_marginTop="@dimen/margin_normal"
-                android:text="@string/save" />
+                android:text="Actualizar Datos" />
 
             <ProgressBar
                 android:id="@+id/progressBar"

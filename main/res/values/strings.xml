@@ -8,6 +8,7 @@
     <string name="nav_students">Alumnos</string>
     <string name="nav_grades">Calificaciones</string>
     <string name="nav_notices">Avisos</string>
+    <string name="nav_notifications">Notificaciones</string>
     <string name="nav_gallery">Galería</string>
     <string name="nav_profile">Perfil</string>
     <string name="nav_attendance">Asistencia</string>
@@ -27,7 +28,8 @@
     <string name="logout">Cerrar sesión</string>
 
     <!-- User Types -->
-    <string name="teacher">Maestra</string>
+
+    <string name="manage_my_group">Administrar mi Grupo</string> <string name="teacher">Maestra</string>
     <string name="parent">Padre/Madre</string>
     <string name="select_user_type">Selecciona tipo de usuario</string>
 
@@ -87,4 +89,5 @@
     <string name="hello_teacher">Hola, %1$s</string>
     <string name="total_students">Total de alumnos</string>
     <string name="today_attendance">Asistencia hoy</string>
+
 </resources>

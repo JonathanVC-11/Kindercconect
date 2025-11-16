@@ -35,6 +35,7 @@ public class AuthRepository {
     }
 
     // ... (loginUser, registerUser, saveUserToFirestore, getUserData, updateUserPhotoUrl... sin cambios) ...
+    // ... (Estos métodos se mantienen)
 
     public LiveData<Resource<FirebaseUser>> loginUser(String email, String password) {
         MutableLiveData<Resource<FirebaseUser>> result = new MutableLiveData<>();
@@ -111,6 +112,36 @@ public class AuthRepository {
         return result;
     }
 
+    // --- INICIO DE CÓDIGO AÑADIDO ---
+    /**
+     * Busca un usuario por email y (opcionalmente) por tipo de usuario.
+     * USADO INTERNAMENTE POR OTROS REPOSITORIOS.
+     */
+    public void findUserByEmail(String email, String expectedUserType, MutableLiveData<Resource<User>> result) {
+        firestore.collection(Constants.COLLECTION_USERS)
+                .whereEqualTo("email", email)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (querySnapshot.isEmpty()) {
+                        result.setValue(Resource.error("No se encontró ningún usuario con el correo: " + email, null));
+                        return;
+                    }
+
+                    User user = querySnapshot.getDocuments().get(0).toObject(User.class);
+
+                    if (user != null && expectedUserType != null && !user.getUserType().equals(expectedUserType)) {
+                        result.setValue(Resource.error("El correo " + email + " no pertenece a una cuenta de Maestra.", null));
+                        return;
+                    }
+
+                    result.setValue(Resource.success(user));
+                })
+                .addOnFailureListener(e -> result.setValue(Resource.error(e.getMessage(), null)));
+    }
+    // --- FIN DE CÓDIGO AÑADIDO ---
+
+
     public LiveData<Resource<Void>> updateUserPhotoUrl(String uid, String photoUrl) {
         MutableLiveData<Resource<Void>> result = new MutableLiveData<>();
         result.setValue(Resource.loading(null));
@@ -124,10 +155,8 @@ public class AuthRepository {
         return result;
     }
 
-    // --- INICIO DE CÓDIGO AÑADIDO ---
-    /**
-     * Actualiza el token FCM para un usuario. Devuelve LiveData (para ViewModels).
-     */
+    // --- (updateUserToken, updateUserTokenFireAndForget, logout, etc. sin cambios) ---
+
     public LiveData<Resource<Void>> updateUserToken(String uid, String token) {
         MutableLiveData<Resource<Void>> result = new MutableLiveData<>();
         result.setValue(Resource.loading(null));
@@ -141,9 +170,6 @@ public class AuthRepository {
         return result;
     }
 
-    /**
-     * Actualiza el token FCM para un usuario. No devuelve nada (para Servicios).
-     */
     public void updateUserTokenFireAndForget(String uid, String token) {
         if (uid == null || token == null) {
             Log.e(TAG, "UID o Token nulos, no se puede actualizar FCM token.");
@@ -156,8 +182,6 @@ public class AuthRepository {
                 .addOnSuccessListener(aVoid -> Log.d(TAG, "FCM Token actualizado (Fire and Forget)"))
                 .addOnFailureListener(e -> Log.e(TAG, "Error al actualizar FCM Token (Fire and Forget)", e));
     }
-    // --- FIN DE CÓDIGO AÑADIDO ---
-
 
     public void logout() {
         firebaseAuth.signOut();

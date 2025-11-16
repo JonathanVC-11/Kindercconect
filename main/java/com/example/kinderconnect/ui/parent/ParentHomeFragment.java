@@ -51,8 +51,20 @@ public class ParentHomeFragment extends Fragment {
     }
 
     private void setupListeners() {
-        // Los listeners de los accesos rápidos están bien como los dejamos
-        // (pasando argumentos)
+        binding.fabAddStudent.setOnClickListener(v -> {
+            Navigation.findNavController(v).navigate(R.id.action_home_to_register_student);
+        });
+
+        // --- INICIO DE CÓDIGO AÑADIDO ---
+        binding.btnEditStudent.setOnClickListener(v -> {
+            if (currentStudent == null) return;
+            Bundle args = new Bundle();
+            args.putString("studentId", currentStudent.getStudentId());
+            Navigation.findNavController(v).navigate(R.id.action_home_to_edit_student, args);
+        });
+        // --- FIN DE CÓDIGO AÑADIDO ---
+
+        // (Listeners de tarjetas sin cambios)
         binding.cardGrades.setOnClickListener(v -> {
             if (currentStudent == null) return;
             Bundle args = new Bundle();
@@ -83,6 +95,7 @@ public class ParentHomeFragment extends Fragment {
         binding.progressBar.setVisibility(View.VISIBLE);
 
         viewModel.getStudentsByParent(parentId).observe(getViewLifecycleOwner(), resource -> {
+            if (binding == null) return; // Vista destruida
             if (resource != null && resource.getStatus() ==
                     com.example.kinderconnect.utils.Resource.Status.SUCCESS) {
                 binding.progressBar.setVisibility(View.GONE);
@@ -90,25 +103,36 @@ public class ParentHomeFragment extends Fragment {
                 if (resource.getData() != null && !resource.getData().isEmpty()) {
                     this.studentList = resource.getData();
 
-                    // --- INICIO DE CÓDIGO MODIFICADO ---
-                    // Intentar cargar el último alumno guardado
                     String lastStudentId = preferencesManager.getCurrentStudentId();
                     this.currentStudent = findStudentById(lastStudentId);
 
-                    // Si no se encontró (o es la primera vez), seleccionar el primero
                     if (this.currentStudent == null) {
                         this.currentStudent = this.studentList.get(0);
                     }
-                    // --- FIN DE CÓDIGO MODIFICADO ---
 
                     setupStudentSelector();
                     updateDashboardForStudent();
+
+                    // --- INICIO DE CÓDIGO AÑADIDO ---
+                    // Mostrar el botón de editar
+                    binding.btnEditStudent.setVisibility(View.VISIBLE);
+                    // --- FIN DE CÓDIGO AÑADIDO ---
+
+                } else {
+                    // --- INICIO DE CÓDIGO AÑADIDO ---
+                    // No hay alumnos, ocultar el botón de editar
+                    binding.btnEditStudent.setVisibility(View.GONE);
+                    // Opcional: Mostrar un "empty state" para registrar alumnos
+                    // --- FIN DE CÓDIGO AÑADIDO ---
                 }
+            } else if (resource != null && resource.getStatus() == com.example.kinderconnect.utils.Resource.Status.ERROR) {
+                if (binding != null) binding.progressBar.setVisibility(View.GONE);
             }
         });
     }
 
-    // --- INICIO DE CÓDIGO AÑADIDO ---
+    // ... (El resto de la clase: findStudentById, setupStudentSelector, updateDashboardForStudent, etc. sin cambios) ...
+
     private Student findStudentById(String studentId) {
         if (studentId == null || studentList == null) {
             return null;
@@ -120,7 +144,6 @@ public class ParentHomeFragment extends Fragment {
         }
         return null;
     }
-    // --- FIN DE CÓDIGO AÑADIDO ---
 
     private void setupStudentSelector() {
         if (studentList == null || studentList.size() <= 1) {
@@ -152,23 +175,17 @@ public class ParentHomeFragment extends Fragment {
     private void updateDashboardForStudent() {
         if (currentStudent == null) return;
 
-        // --- INICIO DE CÓDIGO AÑADIDO ---
-        // **LA CLAVE ESTÁ AQUÍ**: Guardamos el alumno seleccionado
         preferencesManager.saveCurrentStudent(
                 currentStudent.getStudentId(),
                 currentStudent.getFullName(),
                 currentStudent.getGroupName()
         );
-        // --- FIN DE CÓDIGO AÑADIDO ---
 
         displayStudentInfo();
         loadAttendanceStats();
         loadNoticesCount();
         subscribeToTopics(currentStudent.getGroupName());
     }
-
-    // ... (subscribeToTopics, displayStudentInfo, loadAttendanceStats, loadNoticesCount
-    //  y onDestroyView no cambian. Ya los modificamos en el paso anterior.) ...
 
     private void subscribeToTopics(String groupName) {
         // ... (código existente) ...

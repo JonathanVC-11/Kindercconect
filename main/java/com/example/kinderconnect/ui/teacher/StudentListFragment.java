@@ -41,7 +41,7 @@ public class StudentListFragment extends Fragment {
         preferencesManager = new PreferencesManager(requireContext());
 
         setupRecyclerView();
-        setupListeners();
+        // setupListeners(); // <-- ELIMINADO
         loadStudents();
     }
 
@@ -58,28 +58,23 @@ public class StudentListFragment extends Fragment {
                     .navigate(R.id.action_students_to_grade_registration, args);
         });
 
-        // --- INICIO DE CÓDIGO AÑADIDO ---
+        // --- INICIO DE CÓDIGO MODIFICADO ---
         // Clic largo (para Editar/Eliminar)
         adapter.setOnItemLongClickListener(student -> {
             showOptionsDialog(student);
         });
-        // --- FIN DE CÓDIGO AÑADIDO ---
+        // --- FIN DE CÓDIGO MODIFICADO ---
     }
 
-    // --- INICIO DE CÓDIGO AÑADIDO ---
+    // --- INICIO DE CÓDIGO MODIFICADO ---
     private void showOptionsDialog(Student student) {
-        CharSequence[] options = {"Editar Alumno", "Eliminar Alumno"};
+        // AHORA SOLO MOSTRAMOS "Eliminar Alumno"
+        CharSequence[] options = {"Eliminar Alumno"};
 
         new AlertDialog.Builder(requireContext())
                 .setTitle(student.getFullName())
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) {
-                        // Editar
-                        Bundle args = new Bundle();
-                        args.putString("studentId", student.getStudentId());
-                        Navigation.findNavController(binding.getRoot())
-                                .navigate(R.id.action_students_to_add_student, args);
-                    } else if (which == 1) {
                         // Eliminar
                         showDeleteConfirmationDialog(student);
                     }
@@ -118,13 +113,16 @@ public class StudentListFragment extends Fragment {
             }
         });
     }
-    // --- FIN DE CÓDIGO AÑADIDO ---
+    // --- FIN DE CÓDIGO MODIFICADO ---
 
+    // --- MÉTODO ELIMINADO ---
+    /*
     private void setupListeners() {
         binding.fabAddStudent.setOnClickListener(v ->
                 Navigation.findNavController(v).navigate(
                         R.id.action_students_to_add_student)); // Navega sin argumentos
     }
+    */
 
     // --- LÓGICA DE ESTADO VACÍO MODIFICADA ---
     // (Esta ya la tenías bien, sin cambios)
@@ -157,7 +155,8 @@ public class StudentListFragment extends Fragment {
                             binding.emptyView.getRoot().setVisibility(View.VISIBLE);
                             binding.emptyView.ivEmptyIcon.setImageResource(R.drawable.ic_people);
                             binding.emptyView.tvEmptyTitle.setText("No hay alumnos");
-                            binding.emptyView.tvEmptySubtitle.setText("Presiona el botón '+' para agregar tu primer alumno.");
+                            // --- TEXTO MODIFICADO ---
+                            binding.emptyView.tvEmptySubtitle.setText("Los padres deben registrar a sus hijos con tu correo para que aparezcan aquí.");
                         }
                         break;
 

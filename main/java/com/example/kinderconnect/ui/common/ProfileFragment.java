@@ -14,23 +14,23 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModelProvider; // <-- AÑADIDO
-import com.bumptech.glide.Glide; // <-- AÑADIDO
-import com.example.kinderconnect.R; // <-- AÑADIDO
+import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.Navigation;
+import com.bumptech.glide.Glide;
+import com.example.kinderconnect.R;
 import com.example.kinderconnect.databinding.FragmentProfileBinding;
 import com.example.kinderconnect.data.local.PreferencesManager;
-import com.example.kinderconnect.ui.auth.AuthViewModel; // <-- AÑADIDO
+import com.example.kinderconnect.ui.auth.AuthViewModel;
 import com.example.kinderconnect.ui.auth.LoginActivity;
-import com.example.kinderconnect.utils.PermissionManager; // <-- AÑADIDO
+import com.example.kinderconnect.utils.PermissionManager;
 
 public class ProfileFragment extends Fragment {
     private FragmentProfileBinding binding;
     private PreferencesManager preferencesManager;
-    private AuthViewModel authViewModel; // <-- AÑADIDO
+    private AuthViewModel authViewModel;
     private ActivityResultLauncher<Intent> imagePickerLauncher;
     private Uri selectedImageUri;
 
-    // --- NUEVO MÉTODO ONCREATE ---
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -73,23 +73,26 @@ public class ProfileFragment extends Fragment {
         String name = preferencesManager.getUserName();
         String email = preferencesManager.getUserEmail();
         String userType = preferencesManager.getUserType();
-        String photoUrl = preferencesManager.getUserPhoto(); // <-- AÑADIDO
+        String photoUrl = preferencesManager.getUserPhoto();
 
         binding.tvUserName.setText(name);
         binding.tvUserEmail.setText(email);
 
         if ("TEACHER".equals(userType)) {
             binding.tvUserType.setText("Maestra");
+            // MOSTRAR BOTÓN DE GRUPO SI ES MAESTRA
+            binding.cardManageGroup.setVisibility(View.VISIBLE);
         } else {
             binding.tvUserType.setText("Padre/Madre de familia");
+            // OCULTAR BOTÓN SI ES PADRE
+            binding.cardManageGroup.setVisibility(View.GONE);
         }
 
-        // --- AÑADIDO: Cargar foto con Glide ---
         if (photoUrl != null && !photoUrl.isEmpty()) {
             Glide.with(this)
                     .load(photoUrl)
                     .placeholder(R.drawable.ic_logo)
-                    .circleCrop() // <-- Asegura que sea circular si la imagen no lo es
+                    .circleCrop()
                     .into(binding.ivProfilePhoto);
         } else {
             Glide.with(this)
@@ -102,12 +105,21 @@ public class ProfileFragment extends Fragment {
     private void setupListeners() {
         binding.btnLogout.setOnClickListener(v -> showLogoutDialog());
 
-        // --- AÑADIDO: Listener para cambiar foto ---
         binding.fabEditPhoto.setOnClickListener(v -> selectImage());
-        binding.ivProfilePhoto.setOnClickListener(v -> selectImage()); // También en la foto
+        binding.ivProfilePhoto.setOnClickListener(v -> selectImage());
+
+        binding.cardManageGroup.setOnClickListener(v -> {
+            // Navegar al nuevo fragmento (la acción se definirá en el nav_graph)
+            // Esta acción solo existe en teacher_nav_graph, por eso funciona
+            try {
+                Navigation.findNavController(v).navigate(R.id.action_profile_to_manage_group);
+            } catch (Exception e) {
+                // Si falla (ej. estamos en parent_nav_graph), no hacer nada o mostrar toast
+                Toast.makeText(requireContext(), "Error de navegación: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
-    // --- NUEVO MÉTODO AÑADIDO ---
     private void selectImage() {
         if (!PermissionManager.hasStoragePermission(requireContext())) {
             PermissionManager.requestStoragePermission(requireActivity());
@@ -118,14 +130,12 @@ public class ProfileFragment extends Fragment {
         imagePickerLauncher.launch(intent);
     }
 
-    // --- NUEVO MÉTODO AÑADIDO ---
     private void uploadProfilePicture() {
         String userId = preferencesManager.getUserId();
         if (userId == null || selectedImageUri == null) return;
 
         setLoading(true);
 
-        // 1. Subir la imagen a Storage
         authViewModel.uploadProfilePicture(requireContext(), userId, selectedImageUri)
                 .observe(getViewLifecycleOwner(), resource -> {
                     if (resource == null) return;
@@ -134,7 +144,6 @@ public class ProfileFragment extends Fragment {
                             break;
                         case SUCCESS:
                             String newPhotoUrl = resource.getData();
-                            // 2. Actualizar la URL en Firestore
                             updateUserPhotoUrlInFirestore(userId, newPhotoUrl);
                             break;
                         case ERROR:
@@ -145,7 +154,6 @@ public class ProfileFragment extends Fragment {
                 });
     }
 
-    // --- NUEVO MÉTODO AÑADIDO ---
     private void updateUserPhotoUrlInFirestore(String userId, String newPhotoUrl) {
         authViewModel.updateUserPhotoUrl(userId, newPhotoUrl)
                 .observe(getViewLifecycleOwner(), resource -> {
@@ -154,9 +162,8 @@ public class ProfileFragment extends Fragment {
                         case LOADING:
                             break;
                         case SUCCESS:
-                            // 3. Guardar en SharedPreferences y recargar la imagen
                             preferencesManager.saveUserPhoto(newPhotoUrl);
-                            displayUserInfo(); // Recargar la info (incluida la foto)
+                            displayUserInfo();
                             setLoading(false);
                             Toast.makeText(getContext(), "Foto de perfil actualizada", Toast.LENGTH_SHORT).show();
                             break;
@@ -168,7 +175,6 @@ public class ProfileFragment extends Fragment {
                 });
     }
 
-    // --- NUEVO MÉTODO AÑADIDO ---
     private void setLoading(boolean isLoading) {
         if (binding == null) return;
         binding.progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
@@ -186,12 +192,8 @@ public class ProfileFragment extends Fragment {
     }
 
     private void performLogout() {
-        // Limpiar AuthViewModel (si es necesario, aunque el repo maneja el estado)
         authViewModel.logout();
-
-        // Limpiar preferencias
         preferencesManager.clearAll();
-
         Intent intent = new Intent(requireContext(), LoginActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);

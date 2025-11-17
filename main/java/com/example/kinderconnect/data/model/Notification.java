@@ -12,7 +12,11 @@ public class Notification {
     private String title;
     private String body;
     private String type; // Ej: "ATTENDANCE", "NEW_STUDENT", "NOTICE", "BUS_ROUTE"
-    private boolean isRead;
+
+    // --- CORRECCIÓN AQUÍ ---
+    private boolean read; // El campo debe llamarse 'read', no 'isRead'
+    // --- FIN CORRECCIÓN ---
+
     @ServerTimestamp
     private Date timestamp;
 
@@ -26,7 +30,7 @@ public class Notification {
         this.title = title;
         this.body = body;
         this.type = type;
-        this.isRead = false;
+        this.read = false; // --- CORRECCIÓN AQUÍ ---
     }
 
     // Getters y Setters
@@ -45,8 +49,12 @@ public class Notification {
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }
 
-    public boolean isRead() { return isRead; }
-    public void setRead(boolean read) { isRead = read; }
+    // --- CORRECCIÓN AQUÍ ---
+    // El getter se llama 'isRead()' pero el campo es 'read'
+    public boolean isRead() { return read; }
+    // El setter se llama 'setRead()' y el campo es 'read'
+    public void setRead(boolean read) { this.read = read; }
+    // --- FIN CORRECCIÓN ---
 
     public Date getTimestamp() { return timestamp; }
     public void setTimestamp(Date timestamp) { this.timestamp = timestamp; }

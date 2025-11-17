@@ -81,12 +81,23 @@ public class ParentViewModel extends ViewModel {
         return studentRepository.getStudentById(studentId);
     }
 
+    // --- INICIO DE LA CORRECCIÓN ---
     public LiveData<Resource<Student>> registerStudent(Student student, String teacherEmail, String parentId, Uri imageUri) {
         MediatorLiveData<Resource<Student>> result = new MediatorLiveData<>();
         result.setValue(Resource.loading(null));
         LiveData<Resource<Group>> groupSource = groupRepository.getGroupByTeacherEmail(teacherEmail);
 
         result.addSource(groupSource, groupResource -> {
+
+            // 1. Ignorar el estado de carga y esperar el resultado final
+            if (groupResource.getStatus() == Resource.Status.LOADING) {
+                return;
+            }
+
+            // 2. Ahora que no está cargando, podemos remover la fuente
+            result.removeSource(groupSource);
+
+            // 3. Procesar el resultado (SUCCESS o ERROR)
             if (groupResource.getStatus() == Resource.Status.SUCCESS) {
                 Group group = groupResource.getData();
                 if (group != null) {
@@ -94,6 +105,7 @@ public class ParentViewModel extends ViewModel {
                     student.setTeacherId(group.getTeacherId());
                     student.setGroupName(group.getGrade() + " " + group.getGroupName());
                     student.setActive(true);
+                    // El repositorio actualizará 'result' cuando termine la subida/guardado
                     studentRepository.uploadAndRegisterStudent(student, imageUri, result);
                 } else {
                     result.setValue(Resource.error("No se encontró ningún grupo para el correo: " + teacherEmail, null));
@@ -101,10 +113,10 @@ public class ParentViewModel extends ViewModel {
             } else if (groupResource.getStatus() == Resource.Status.ERROR) {
                 result.setValue(Resource.error(groupResource.getMessage(), null));
             }
-            result.removeSource(groupSource);
         });
         return result;
     }
+    // --- FIN DE LA CORRECCIÓN ---
 
     public LiveData<Resource<Student>> updateStudent(Student student, Uri newImageUri) {
         return studentRepository.updateStudent(student, newImageUri);
